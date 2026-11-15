@@ -40,6 +40,15 @@ export interface McpConnectorPreset {
  */
 export const MCP_CONNECTOR_PRESETS = [
   {
+    id: "composio",
+    name: "Composio",
+    category: "popular",
+    description:
+      "Discover tools and connect Gmail, GitHub, Slack, Notion, and other apps on demand.",
+    url: "https://connect.composio.dev/mcp",
+    docsUrl: "https://docs.composio.dev/docs/composio-connect",
+  },
+  {
     id: "supabase",
     name: "Supabase",
     category: "popular",

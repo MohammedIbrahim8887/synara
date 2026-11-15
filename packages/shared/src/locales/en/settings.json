@@ -1263,5 +1263,20 @@
   "general_newChatAccount": "Agent and account",
   "general_newChatAccountDescription": "New chats start on this account until you pick another in the model picker. After that they reuse your most recent choice.",
   "general_newChatAccountResetLabel": "agent and account",
-  "general_newChatAccountChoose": "Choose an enabled account"
+  "general_newChatAccountChoose": "Choose an enabled account",
+  "connectorComposioDescription": "Discover tools and connect Gmail, GitHub, Slack, Notion, and other apps on demand.",
+  "composioDiscoveryTitle": "Find apps and tools",
+  "composioDiscoveryDescription": "Tell us what you want to do, or search by app name. Try “review GitHub pull requests” or “find notes in Notion”.",
+  "composioSearchPlaceholder": "Describe a task or name an app",
+  "composioSearchAction": "Find tools",
+  "composioSearchSignIn": "Search is powered by Composio. Connect once to discover tools, then choose which apps can access your accounts.",
+  "composioDeveloperTools": "Developer apps",
+  "composioSearchFailed": "Could not search Composio. Try again.",
+  "composioSearchResults": "{{count}} matching tools for “{{query}}”",
+  "composioSearchEmpty": "No matching tools returned. Try naming an app and a specific action.",
+  "composioCopyTool": "Copy tool name",
+  "composioToolUsage": "Copy a tool name into a new chat to use it. Your agent can help connect the app first.",
+  "directConnectionsTitle": "Direct connections",
+  "directConnectionsDescription": "Connect straight to a service using its own integration. These do not go through Composio; some of the same apps are available in both places.",
+  "connectAppsAction": "Connect apps"
 }

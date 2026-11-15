@@ -12,8 +12,12 @@ vi.mock("./proxy.ts", async (importOriginal) => ({
 
 import { McpConnectorRuntime } from "./runtime";
 
-describe("Vercel connector OAuth", () => {
+describe.each([
+  { presetId: "vercel", name: "Vercel", resource: "https://mcp.vercel.com/" },
+  { presetId: "composio", name: "Composio", resource: "https://connect.composio.dev/mcp" },
+])("$name connector OAuth", ({ presetId, name, resource }) => {
   it("requests renewable access and refreshes the saved grant after a restart", async () => {
+    vi.clearAllMocks();
     let saved: string | null = null;
     let now = Date.parse("2026-10-16T10:00:00Z");
     let registrationScope: unknown;
@@ -21,9 +25,9 @@ describe("Vercel connector OAuth", () => {
     network.request.mockImplementation(async ({ url, body }) => {
       const target = new URL(url);
       let response: unknown;
-      if (target.hostname === "mcp.vercel.com") {
+      if (target.origin === new URL(resource).origin) {
         response = {
-          resource: "https://mcp.vercel.com/",
+          resource,
           authorization_servers: ["https://auth.example.test"],
           scopes_supported: ["openid"],
         };
@@ -73,10 +77,12 @@ describe("Vercel connector OAuth", () => {
         now: () => now,
       });
     const runtime = makeRuntime();
-    const started = await runtime.connect({ presetId: "vercel" });
+    const started = await runtime.connect({ presetId });
     const authorization = new URL(started.authorizationUrl!);
     expect(authorization.searchParams.get("scope")).toBe("openid offline_access");
     expect(registrationScope).toBe("openid offline_access");
+    expect(authorization.searchParams.get("code_challenge_method")).toBe("S256");
+    expect(authorization.searchParams.get("state")).toBeTruthy();
     expect(
       await runtime.completeAuthorization({
         state: authorization.searchParams.get("state")!,
@@ -84,7 +90,7 @@ describe("Vercel connector OAuth", () => {
         error: undefined,
         errorDescription: undefined,
       }),
-    ).toEqual({ ok: true, name: "Vercel" });
+    ).toEqual({ ok: true, name });
 
     now += 120_000;
     const restarted = makeRuntime();

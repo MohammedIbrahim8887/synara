@@ -70,7 +70,7 @@ describe("normalizeProviderStatusForLocalConfig", () => {
       available: false,
       authStatus: "unknown",
       checkedAt: BASE_STATUS.checkedAt,
-      message: "Provider is disabled in Synara settings.",
+      message: "Provider is disabled in Sona settings.",
     });
   });
 
@@ -158,7 +158,7 @@ describe("normalizeProviderStatusForLocalConfig", () => {
       instanceId: "antigravity_work",
       displayName: "Antigravity Work",
       enabled: false,
-      message: "Provider is disabled in Synara settings.",
+      message: "Provider is disabled in Sona settings.",
     };
 
     expect(

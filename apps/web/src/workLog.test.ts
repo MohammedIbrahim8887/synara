@@ -5065,9 +5065,9 @@ describe("deriveWorkLogEntries", () => {
     const entries = deriveWorkLogEntries(activities, undefined);
     expect(entries.map((entry) => [entry.itemType, entry.toolTitle])).toEqual(
       expect.arrayContaining([
-        ["mcp_tool_call", "Synara is creating a thread"],
-        ["dynamic_tool_call", "Synara is sending a message"],
-        ["file_change", "Synara is listing threads"],
+        ["mcp_tool_call", "Sona is creating a thread"],
+        ["dynamic_tool_call", "Sona is sending a message"],
+        ["file_change", "Sona is listing threads"],
       ]),
     );
     expect(entries).toHaveLength(3);
@@ -5099,7 +5099,7 @@ describe("deriveWorkLogEntries", () => {
 
     expect(entry).toMatchObject({
       toolStatus: "failed",
-      toolTitle: "Synara couldn't create threads",
+      toolTitle: "Sona couldn't create threads",
       detail: "Invalid target options",
     });
   });

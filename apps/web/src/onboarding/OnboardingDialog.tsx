@@ -1,5 +1,5 @@
 // FILE: OnboardingDialog.tsx
-// Purpose: First-run onboarding as a full-window experience: welcome → agents → tasks →
+// Purpose: First-run onboarding as a full-window experience: welcome → agents → connectors → tasks →
 //          pocket → account → pair → ready, over the character-built landscape. Remote
 //          steps appear only when this build can pair a phone; pairing only once signed in.
 //          Owns step navigation and the per-run results the final receipt reads.
@@ -13,6 +13,7 @@ import { ProfileSetupForm } from "~/components/account/OnboardingDialog";
 import { useAnnouncementSheetSlot } from "~/components/announcementSheetSlot";
 import { CHAT_SURFACE_HEADER_HEIGHT_CLASS } from "~/components/chat/chatHeaderControls";
 import { Button } from "~/components/ui/button";
+import { McpConnectorsSettingsPanel } from "~/components/settings/McpConnectorsSettingsPanel";
 import { Dialog, DialogPopup } from "~/components/ui/dialog";
 import { isElectron } from "~/env";
 import { useAccount } from "~/hooks/useAccount";
@@ -237,6 +238,23 @@ function OnboardingFlow(props: {
             primary={{ label: t("git:continue"), onClick: goNext }}
           >
             <ProvidersStep detection={providerDetection} setup={providerSetup} />
+          </OnboardingScreen>
+        );
+      case "connectors":
+        return (
+          <OnboardingScreen
+            number={stepNumber}
+            numberSuffix={t("onboarding:optional")}
+            lead={t("onboarding:connectorsLead")}
+            statement={t("onboarding:connectorsStatement")}
+            description={t("onboarding:connectorsDescription")}
+            stageClassName="bg-background/90"
+            secondary={{ label: t("common:app_back"), onClick: goBack }}
+            primary={{ label: t("git:continue"), onClick: goNext }}
+          >
+            <div className="px-8 py-8">
+              <McpConnectorsSettingsPanel active />
+            </div>
           </OnboardingScreen>
         );
       case "tasks":

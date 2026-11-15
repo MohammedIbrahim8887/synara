@@ -138,3 +138,41 @@ it("publishes complete glyph layers after resize without a partial top-down wipe
   await expect.poll(() => bottomCoverage.length, { timeout: 5000 }).toBeGreaterThan(0);
   expect(bottomCoverage.every(Boolean)).toBe(true);
 });
+
+// Modal libraries mark the covered workspace inert without changing CSS visibility.
+it.each(["inert", "data-base-ui-inert"])(
+  "pauses canvas rendering beneath a %s owner and resumes after dismissal",
+  async (attribute) => {
+    const { host, canvas } = await mount();
+    const clears = vi.spyOn(canvas.getContext("2d")!, "clearRect");
+    host.setAttribute(attribute, "");
+    await wait(150);
+    clears.mockClear();
+    // Scrolling the modal must not wake the covered decoration.
+    window.dispatchEvent(new WheelEvent("wheel"));
+    await wait(1200);
+    expect(clears.mock.calls.length).toBe(0);
+    host.removeAttribute(attribute);
+    await expect.poll(() => clears.mock.calls.length, { timeout: 2500 }).toBeGreaterThan(0);
+  },
+);
+
+it("defers canvas allocation while its owner is covered by a modal", async () => {
+  const view = await render(
+    <div
+      data-testid="covered-landing"
+      data-base-ui-inert=""
+      style={{ position: "relative", width: 800, height: 600 }}
+    >
+      <AsciiWaveBackground />
+    </div>,
+  );
+  const host = document.querySelector<HTMLDivElement>('[data-testid="covered-landing"]')!;
+  const canvas = host.querySelector("canvas")!;
+  const draws = vi.spyOn(CanvasRenderingContext2D.prototype, "drawImage");
+  await wait(2000);
+  expect(draws.mock.calls.length).toBe(0);
+  host.removeAttribute("data-base-ui-inert");
+  await expect.poll(() => pixels(canvas).some((byte) => byte > 0), { timeout: 5000 }).toBe(true);
+  await view.unmount();
+});

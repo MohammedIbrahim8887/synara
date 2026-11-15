@@ -12,6 +12,7 @@ import type { ProviderKind, ServerProviderStatus } from "@synara/contracts";
 export const ONBOARDING_STEPS = [
   "welcome",
   "agents",
+  "connectors",
   "tasks",
   "pocket",
   "account",

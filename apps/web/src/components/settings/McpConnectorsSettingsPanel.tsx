@@ -59,6 +59,7 @@ import {
   McpConnectorProposalCard,
   mcpConnectorProposalsQueryOptions,
 } from "./McpConnectorProposalCard";
+import { ComposioDiscovery } from "./ComposioDiscovery";
 import { SettingsEmptyState } from "./SettingsPanelPrimitives";
 
 const CATEGORY_LABELS: Record<McpConnectorCategory, string> = {
@@ -68,6 +69,7 @@ const CATEGORY_LABELS: Record<McpConnectorCategory, string> = {
 };
 
 const PRESET_DESCRIPTION_KEYS: Readonly<Record<string, string>> = {
+  composio: "settings:connectorComposioDescription",
   supabase: "settings:connectorSupabaseDescription",
   vercel: "settings:connectorVercelDescription",
   workos: "settings:connectorWorkosDescription",
@@ -184,7 +186,7 @@ function PresetRow(props: { preset: McpConnectorPreset; onSelect: () => void }) 
     <button
       type="button"
       onClick={props.onSelect}
-      className={`${CONNECTOR_ROW_CLASS_NAME} group text-left transition-colors hover:bg-[var(--sidebar-accent)] focus-visible:outline-2 focus-visible:outline-ring`}
+      className={`${CONNECTOR_ROW_CLASS_NAME} group text-left hover:bg-[var(--sidebar-accent)] focus-visible:outline-2 focus-visible:outline-ring`}
     >
       <McpConnectorGlyph name={props.preset.name} url={props.preset.url} />
       <ConnectorRowText
@@ -192,7 +194,7 @@ function PresetRow(props: { preset: McpConnectorPreset; onSelect: () => void }) 
         description={presetDescription(props.preset, t)}
       />
       <AddPlusIcon
-        className="size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
+        className="size-5 shrink-0 text-muted-foreground group-hover:text-foreground"
         aria-hidden="true"
       />
     </button>
@@ -435,6 +437,7 @@ export function McpConnectorsSettingsPanel(props: { active: boolean }) {
     category,
     presets: MCP_CONNECTOR_PRESETS.filter(
       (preset) =>
+        preset.id !== "composio" &&
         preset.category === category &&
         !connectedUrls.has(preset.url) &&
         matchesSearch(query, preset.name, presetDescription(preset, t)),
@@ -453,6 +456,44 @@ export function McpConnectorsSettingsPanel(props: { active: boolean }) {
 
   return (
     <div className="space-y-8">
+      <ComposioDiscovery
+        connectorId={
+          connectors.find(
+            (connector) =>
+              connector.transport !== "stdio" &&
+              connector.url === "https://connect.composio.dev/mcp" &&
+              connector.status === "connected",
+          )?.connectorId ?? null
+        }
+        onConnect={() => {
+          const preset = MCP_CONNECTOR_PRESETS.find((entry) => entry.id === "composio");
+          if (preset) setTarget(presetTarget(preset));
+        }}
+      />
+      {visibleConnectors.length > 0 ? (
+        <ConnectorShelf title="Your connectors" cards>
+          {visibleConnectors.map((connector) => (
+            <ConnectedRow
+              key={connector.connectorId}
+              connector={connector}
+              disconnecting={disconnectMutation.isPending}
+              onReconnect={() => {
+                if (connector.transport !== "stdio") setTarget(connectorTarget(connector));
+              }}
+              onDisconnect={() => {
+                void disconnect(connector);
+              }}
+            />
+          ))}
+        </ConnectorShelf>
+      ) : null}
+
+      <div className="space-y-1 px-3">
+        <h2 className="text-ui-lg font-medium">{t("settings:directConnectionsTitle")}</h2>
+        <p className="text-ui text-muted-foreground">
+          {t("settings:directConnectionsDescription")}
+        </p>
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <SearchInput
           type="search"
@@ -490,24 +531,6 @@ export function McpConnectorsSettingsPanel(props: { active: boolean }) {
             ? connectorsQuery.error.message
             : t("settings:connectorsLoadFailed")}
         </SettingsEmptyState>
-      ) : null}
-
-      {visibleConnectors.length > 0 ? (
-        <ConnectorShelf title="Your connectors" cards>
-          {visibleConnectors.map((connector) => (
-            <ConnectedRow
-              key={connector.connectorId}
-              connector={connector}
-              disconnecting={disconnectMutation.isPending}
-              onReconnect={() => {
-                if (connector.transport !== "stdio") setTarget(connectorTarget(connector));
-              }}
-              onDisconnect={() => {
-                void disconnect(connector);
-              }}
-            />
-          ))}
-        </ConnectorShelf>
       ) : null}
 
       {shelves.map((shelf) => (

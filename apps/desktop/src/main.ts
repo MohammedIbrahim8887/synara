@@ -1,4 +1,5 @@
 import "./httpRuntime";
+import { getSafeExternalUrl } from "./externalUrl";
 import {
   attachDesktopUpdateControl,
   DESKTOP_UPDATE_IPC_ENV,
@@ -805,25 +806,6 @@ function formatErrorMessage(error: unknown): string {
     return error.message;
   }
   return String(error);
-}
-
-function getSafeExternalUrl(rawUrl: unknown): string | null {
-  if (typeof rawUrl !== "string" || rawUrl.length === 0) {
-    return null;
-  }
-
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(rawUrl);
-  } catch {
-    return null;
-  }
-
-  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
-    return null;
-  }
-
-  return parsedUrl.toString();
 }
 
 function getSafeTheme(rawTheme: unknown): DesktopTheme | null {

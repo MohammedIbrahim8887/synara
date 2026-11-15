@@ -47,6 +47,7 @@ async function withConnectorServer(
     } as unknown as AgentGatewayCredentialsShape;
     const connectors: McpConnectorsShape = {
       enabled: options.enabled,
+      searchComposio: () => Effect.succeed({ tools: [] }),
       list: () => Effect.succeed([]),
       listProposals: () => Effect.succeed([]),
       proposeAdd: () => Effect.die("unused"),

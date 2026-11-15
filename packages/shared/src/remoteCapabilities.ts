@@ -12,6 +12,7 @@ const unavailableMethods = new Set<string>([
   WS_METHODS.shellOpenInEditor,
   // Connector OAuth returns to the execution computer’s loopback browser.
   WS_METHODS.serverConnectMcpConnector,
+  WS_METHODS.serverSearchComposioTools,
   WS_METHODS.serverListMcpConnectorProposals,
   WS_METHODS.serverResolveMcpConnectorProposal,
   WS_METHODS.serverGetMcpConnectorSetup,

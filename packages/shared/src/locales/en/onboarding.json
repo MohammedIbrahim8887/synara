@@ -181,5 +181,8 @@
   "appTourClose": "Close tour",
   "appTourDone": "Done",
   "appTourSteps": "Tour steps",
-  "safariHeroFullDiskAccess": "Full Disk Access"
+  "safariHeroFullDiskAccess": "Full Disk Access",
+  "connectorsLead": "Bring your context,",
+  "connectorsStatement": "connect the apps you work in",
+  "connectorsDescription": "Find the apps and tools you need, or describe what you want to do. Connect your accounts to bring their context into your chats. You can also set this up later in Settings."
 }

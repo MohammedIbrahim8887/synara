@@ -45,17 +45,26 @@ describe("onboarding steps", () => {
   it("shows only the local steps when this build cannot pair a phone", () => {
     expect(
       resolveOnboardingSteps({ remoteAvailable: false, offerAccount: true, signedIn: true }),
-    ).toEqual(["welcome", "agents", "tasks", "ready"]);
+    ).toEqual(["welcome", "agents", "connectors", "tasks", "ready"]);
   });
 
   it("offers the account step only to a signed-out user and pairing only once signed in", () => {
     expect(
       resolveOnboardingSteps({ remoteAvailable: true, offerAccount: true, signedIn: false }),
-    ).toEqual(["welcome", "agents", "tasks", "pocket", "account", "ready"]);
+    ).toEqual(["welcome", "agents", "connectors", "tasks", "pocket", "account", "ready"]);
     expect(
       resolveOnboardingSteps({ remoteAvailable: true, offerAccount: false, signedIn: true }),
-    ).toEqual(["welcome", "agents", "tasks", "pocket", "pair", "ready"]);
-    expect(FULL).toEqual(["welcome", "agents", "tasks", "pocket", "account", "pair", "ready"]);
+    ).toEqual(["welcome", "agents", "connectors", "tasks", "pocket", "pair", "ready"]);
+    expect(FULL).toEqual([
+      "welcome",
+      "agents",
+      "connectors",
+      "tasks",
+      "pocket",
+      "account",
+      "pair",
+      "ready",
+    ]);
   });
 
   it("clamps navigation at both ends", () => {

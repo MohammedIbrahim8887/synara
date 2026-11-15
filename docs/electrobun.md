@@ -104,3 +104,25 @@ not been qualified. The probe does not load the complete Synara frontend.
 - The expanded native CEF qualification fails at guest readiness. The fixture
   HTTP server did not receive the guest request in that failing run. The
   application window/RPC checks passed and the native window-close event was observed.
+
+## Local preview external links
+
+`src/preview.ts` and `preview.config.ts` describe the isolated macOS preview
+(the qualification entry point remains unchanged). For a scratch Hutch project,
+use the preview configuration as `electrobun.config.ts` and point its Bun entry
+point at the preview source in this checkout. It expects the isolated web client
+at `http://localhost:6733`; start its matching backend separately. Preserve the
+preview bundle identity when rebuilding so its profile remains isolated.
+
+OAuth returns its authorization URL asynchronously, after the click gesture.
+The preview therefore enables CEF's `disable-popup-blocking` flag and registers
+an app-view-specific `new-window-open` handler. The handler reuses the desktop's
+HTTP(S) URL validation and opens the system browser through `Utils.openExternal`.
+Other schemes and other view IDs are rejected; top-level navigation stays within
+the local app origin. Do not reuse this popup policy for untrusted guest browsers.
+Authorization URLs are never logged.
+
+Native verification on macOS ARM64 / Electrobun 2.0.6 reproduced the blocked
+async popup, then confirmed a request reached a loopback test page in the default
+browser after both fixes. This proves browser launching, not a completed Composio
+login or tool execution. Other platforms remain unverified.

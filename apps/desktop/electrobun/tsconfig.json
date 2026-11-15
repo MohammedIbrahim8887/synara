@@ -16,5 +16,5 @@
       "electrobun/view": ["./.hutch/devkit/api/browser/index.ts"]
     }
   },
-  "include": ["src", "electrobun.config.ts", "hutch.config.ts"]
+  "include": ["src", "electrobun.config.ts", "preview.config.ts", "hutch.config.ts"]
 }

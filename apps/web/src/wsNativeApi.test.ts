@@ -228,6 +228,9 @@ describe("wsNativeApi", () => {
     await api.account.status();
     await api.server.getEnvironment();
     await api.server.listMcpConnectors();
+    await expect(
+      api.server.searchComposioTools({ connectorId: "owner-connector", query: "GitHub" }),
+    ).rejects.toThrow("unavailable for remote workspaces");
     await api.server.disconnectMcpConnector({ connectorId: "owner-connector" });
     await expect(api.server.getMcpConnectorSetup()).rejects.toThrow(
       "unavailable for remote workspaces",
