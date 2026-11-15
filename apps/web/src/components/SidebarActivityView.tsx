@@ -1,3 +1,4 @@
+import { APP_BASE_NAME } from "~/branding";
 // FILE: SidebarActivityView.tsx
 // Purpose: Task-feed sidebar surface — every thread is a 2-line task row
 //          (provider + title / project + branch) grouped by status, with settle.
@@ -652,7 +653,7 @@ function ActivityScopeMenu({
     scopeSelection === null
       ? t("workspace:allActivity")
       : scopeSelection === "chats"
-        ? "Synara"
+        ? APP_BASE_NAME
         : resolveThreadProjectLabel(projectById.get(scopeSelection));
 
   return (
@@ -705,7 +706,7 @@ function ActivityScopeMenu({
                 <span className="min-w-0 flex-1 truncate">
                   {option.kind === "project"
                     ? resolveThreadProjectLabel(projectById.get(option.projectId))
-                    : "Synara"}
+                    : APP_BASE_NAME}
                 </span>
                 <span className="ml-2 shrink-0 tabular-nums text-muted-foreground/60">
                   {option.threadCount}
@@ -1480,7 +1481,7 @@ export function SidebarActivityView({
             <SidebarSectionLabel
               label={
                 group.kind === "chats"
-                  ? "Synara"
+                  ? APP_BASE_NAME
                   : resolveThreadProjectLabel(projectById.get(group.projectId))
               }
               {...(group.kind === "project" &&

@@ -146,7 +146,12 @@ function OnboardingFlow(props: {
         windowControlsGutterClassName,
       )}
     >
-      <img src="/app-icons/dark.png" alt="" className="size-[26px] shrink-0" draggable={false} />
+      <img
+        src="/branding/sona-logo.png"
+        alt=""
+        className="size-[26px] shrink-0"
+        draggable={false}
+      />
       <span className="text-ui-lg font-medium tracking-[-0.01em] text-foreground">
         {APP_BASE_NAME}
       </span>

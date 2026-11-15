@@ -1,3 +1,4 @@
+import { APP_BASE_NAME } from "~/branding";
 import {
   dispatchSelectedWorkspaceChatCreation,
   openWorkspacePath,
@@ -1292,7 +1293,7 @@ export function SidebarActivityBellButton({
 }
 
 const SIDEBAR_SURFACE_PICKER_COPY: Record<SidebarView, { title: string; description: string }> = {
-  threads: { title: "Synara", description: "workspace:buildDebugShip" },
+  threads: { title: APP_BASE_NAME, description: "workspace:buildDebugShip" },
   groups: { title: "common:hubs", description: "workspace:coordinatedAcrossRepos" },
 };
 
@@ -5975,7 +5976,7 @@ export default function Sidebar() {
   }, [activeSidebarThreadId, visibleSidebarThreadIds]);
 
   // Pinned rows share the thread-container label rule (project name, or
-  // "Synara" for project-less chats) with the hover cards and Activity rows.
+  // APP_BASE_NAME for project-less chats) with the hover cards and Activity rows.
   function resolvePinnedThreadProjectLabel(projectId: ProjectId): string {
     return resolveThreadProjectLabel(projectById.get(projectId));
   }

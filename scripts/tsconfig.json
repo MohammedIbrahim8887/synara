@@ -15,6 +15,7 @@
   // device-helper-smoke.ts spawns the helper through the server's sandbox
   // wrapper so the smoke run exercises the same confinement the app applies.
   // Duplicating that logic here is what would let the two drift.
+  // Electrobun qualification reuses the server process runner for bounded launches.
   // Packaged startup reuses the runtime's supervised process teardown rather
   // than maintaining a second release-only process manager.
   // computer-use-fixtures is the canary/fixture runner family: it crosses into
@@ -24,6 +25,7 @@
   "include": [
     "**/*.ts",
     "../apps/server/src/device/helperSandbox.ts",
+    "../apps/server/src/processRunner.ts",
     "../apps/server/src/persistence/AccountMigrationLineage.ts",
     "../apps/server/src/platform/supervisedProcessTeardown.ts",
     "../apps/server/src/platform/processTreeController.ts",

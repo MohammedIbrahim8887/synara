@@ -17,7 +17,7 @@ const OPEN_EVENT = "synara:safari-access-setup";
 /** "continued" is a legacy value from the earlier two-button intro; treat it like "later". */
 const Decision = Schema.Literals(["unseen", "later", "continued"]);
 const SAFARI_ICON_SRC = "/app-icons/safari.png";
-const SYNARA_ICON_SRC = "/app-icons/dark.png";
+const SYNARA_ICON_SRC = "/branding/sona-logo.png";
 
 const STATUS = {
   settingsOpened: "System Settings is open. Once Synara is switched on, quit and reopen it.",

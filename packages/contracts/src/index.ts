@@ -21,6 +21,7 @@ export * from "./browserAutomationToolCatalogue";
 export * from "./browserVault";
 export * from "./browserAnnotations";
 export * from "./ipc";
+export * from "./desktopRpc";
 export * from "./desktopUpdate";
 export * from "./terminal";
 export * from "./provider";

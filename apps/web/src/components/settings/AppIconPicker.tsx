@@ -19,7 +19,7 @@ interface AppIconOption {
 const APP_ICON_OPTIONS = {
   default: { label: "settings:defaultIcon", src: "/app-icons/default.png" },
   icon: { label: "workspace:icon", src: "/app-icons/icon-group-600-macos.png" },
-  dark: { label: "settings:darkIcon", src: "/app-icons/dark.png" },
+  dark: { label: "settings:darkIcon", src: "/branding/sona-logo.png" },
   beta: { label: "settings:betaIcon", src: "/app-icons/beta.png" },
 } as const satisfies Record<DesktopAppIcon, AppIconOption>;
 

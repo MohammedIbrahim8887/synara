@@ -4,7 +4,7 @@
 // Layer: Settings UI components
 // Exports: PairingQrCode
 
-import { SynaraLogo } from "@synara/profile-ui/logo";
+import { SynaraLogo } from "~/components/SonaLogo";
 import { useMemo } from "react";
 import { encode, QrCodeDataType } from "uqr";
 

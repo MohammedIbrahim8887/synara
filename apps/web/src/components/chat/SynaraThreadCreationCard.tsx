@@ -12,7 +12,7 @@ import {
 } from "../../lib/hosts/workspaceSessions";
 import type { WorkLogSynaraThreadCreation } from "../../session-logic";
 import { ProviderIcon } from "../ProviderIcon";
-import { SynaraLogo } from "@synara/profile-ui/logo";
+import { SynaraLogo } from "~/components/SonaLogo";
 import { Button } from "../ui/button";
 import { useTranslation } from "~/i18n";
 
@@ -75,7 +75,7 @@ export const SynaraThreadCreationCard = memo(function SynaraThreadCreationCard({
     >
       <div className="flex min-w-0 items-center gap-3 px-3 py-2.5">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-background-elevated-secondary)] text-foreground">
-          <SynaraLogo className="h-[22px] w-auto" aria-label="Synara" />
+          <SynaraLogo className="h-[22px] w-auto" aria-label="Sona" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-system-ui text-ui-lg font-medium text-foreground/95">

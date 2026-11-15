@@ -156,7 +156,7 @@ export function SignInOrbit(props: { readonly mail?: boolean }) {
           }}
         />
         <img
-          src="/app-icons/dark.png"
+          src="/branding/sona-logo.png"
           alt=""
           draggable={false}
           className="absolute"

@@ -1,3 +1,4 @@
+import { APP_BASE_NAME } from "~/branding";
 // FILE: ShareCard.tsx
 // Purpose: Fixed-size, theme-independent "virality" card rendered to PNG via html-to-image.
 // Uses explicit colors (not theme tokens) so the exported image looks identical in light
@@ -7,7 +8,7 @@
 
 import { forwardRef, type ReactNode } from "react";
 import { ProviderIcon } from "~/components/ProviderIcon";
-import { SynaraLogo } from "@synara/profile-ui/logo";
+import { SynaraLogo } from "~/components/SonaLogo";
 import { ActivityHeatmap, CARD_HEATMAP_INTENSITY_CLASSES } from "./ActivityHeatmap";
 import { ProfileAvatar } from "@synara/profile-ui/avatar";
 import {
@@ -129,7 +130,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(function Sha
         </div>
         <div className="flex shrink-0 items-center gap-2 text-slate-600">
           <SynaraLogo className="size-6 text-slate-700" />
-          <span className="text-xl font-normal tracking-tight">Synara</span>
+          <span className="text-xl font-normal tracking-tight">{APP_BASE_NAME}</span>
         </div>
       </div>
 

@@ -1,0 +1,20 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM"],
+    "types": ["bun"],
+    "typeRoots": ["../../../scripts/node_modules/@types"],
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    // Electrobun publishes SDK sources whose optional properties accept undefined.
+    // The application bridge remains checked with the stricter desktop config.
+    "exactOptionalPropertyTypes": false,
+    // Avoid the SDK projection's baseUrl, which TypeScript 7 removed.
+    "paths": {
+      "electrobun": ["./.hutch/devkit/api/sdks/main/index.ts"],
+      "electrobun/main": ["./.hutch/devkit/api/sdks/main/index.ts"],
+      "electrobun/view": ["./.hutch/devkit/api/browser/index.ts"]
+    }
+  },
+  "include": ["src", "electrobun.config.ts", "hutch.config.ts"]
+}

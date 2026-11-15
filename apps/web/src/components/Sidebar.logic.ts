@@ -1,3 +1,4 @@
+import { APP_BASE_NAME } from "~/branding";
 // FILE: Sidebar.logic.ts
 // Purpose: Shared sidebar sorting and status helpers used by the thread list UI.
 // Exports: Sidebar row state derivation, add-project error helpers, sort utilities, and visibility helpers.
@@ -237,7 +238,7 @@ export function resolveThreadProjectLabel(
   project: Pick<Project, "kind" | "name" | "folderName"> | null | undefined,
 ): string {
   if (!project || project.kind !== "project") {
-    return "Synara";
+    return APP_BASE_NAME;
   }
   return nonEmptyDisplayValue(project.name) ?? project.folderName;
 }
