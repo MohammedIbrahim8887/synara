@@ -34,6 +34,14 @@
     "./composerSlashCommands": {
       "types": "./src/composerSlashCommands.ts",
       "import": "./src/composerSlashCommands.ts"
+    },
+    "./localConnections": {
+      "types": "./src/localConnections.ts",
+      "import": "./src/localConnections.ts"
+    },
+    "./sonaDesktop": {
+      "types": "./src/sonaDesktop.ts",
+      "import": "./src/sonaDesktop.ts"
     }
   },
   "scripts": {

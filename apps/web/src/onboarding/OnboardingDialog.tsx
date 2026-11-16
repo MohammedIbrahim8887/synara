@@ -1,3 +1,4 @@
+import { SONA_CLOUD_ACCOUNT_ENABLED } from "@synara/shared/betaFeatures";
 // FILE: OnboardingDialog.tsx
 // Purpose: First-run onboarding as a full-window experience: welcome → agents → connectors →
 //          pocket → account → pair → ready, over the character-built landscape. Remote
@@ -75,6 +76,7 @@ function OnboardingFlow(props: {
   const { t, formatLocale } = useTranslation();
   const onMac = isMacNavigatorPlatform();
   const remoteAvailable =
+    SONA_CLOUD_ACCOUNT_ENABLED &&
     readExecutionContext()?.controller.capabilities.remoteConnections === true;
 
   const [step, setStep] = useState<OnboardingStep>("welcome");

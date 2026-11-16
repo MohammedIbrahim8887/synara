@@ -1169,6 +1169,7 @@
   "enableProvider": "Enable {{provider}}",
   "disableProvider": "Disable {{provider}}",
   "archivedRelativeTime": "Archived {{time}}",
+  "sidebarUsageAccounts": "Sidebar usage accounts",
   "sidebarUsageAccountLimit_one": "Sidebar · up to {{count}} account",
   "sidebarUsageAccountLimit_other": "Sidebar · up to {{count}} accounts",
   "permissionGuideEnableInstalledApp": "If this copy of {{app}} is already listed, turn it on. Otherwise, drag the app from the floating guide into the list, or use + to choose this installed copy, then turn it on.",
@@ -1278,5 +1279,19 @@
   "composioToolUsage": "Copy a tool name into a new chat to use it. Your agent can help connect the app first.",
   "directConnectionsTitle": "Direct connections",
   "directConnectionsDescription": "Connect straight to a service using its own integration. These do not go through Composio; some of the same apps are available in both places.",
-  "connectAppsAction": "Connect apps"
+  "connectAppsAction": "Connect apps",
+  "localConnectionsTitle": "Local connections",
+  "localConnectionsAllow": "Allow devices on your network",
+  "localConnectionsDescription": "Connect Sona for Android on the same Wi-Fi. No Sona account or subscription is needed. Connections use encrypted, paired access. This switch resets when Sona closes.",
+  "localConnectionsSwitch": "Allow local device connections",
+  "localConnectionsInstructions": "In Sona for Android, choose Scan pairing code. The code grants control of this workspace; scan it only on a device you own.",
+  "localConnectionsScan": "Scan with Sona for Android",
+  "localConnectionsExpired": "This code expired. Create a new one to connect.",
+  "localConnectionsCreating": "Creating code…",
+  "localConnectionsNewCode": "New pairing code",
+  "localConnectionsCreateCode": "Create pairing code",
+  "localConnectionsDevices": "Connected devices",
+  "localConnectionsDevice": "Paired device",
+  "localConnectionsRevoke": "Revoke access",
+  "localConnectionsEmpty": "No paired devices yet."
 }

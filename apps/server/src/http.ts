@@ -1,3 +1,4 @@
+import type { LocalConnections } from "./localConnections";
 import { readEventLoopStatus } from "./eventLoopMonitor";
 import * as fs from "node:fs/promises";
 import nodePath from "node:path";
@@ -234,8 +235,10 @@ function localPreviewCorsHeaders(input: {
 export function makeEffectHttpRouteLayer(
   readiness: ServerReadiness,
   shutdownController: ServerShutdownController,
+  localConnections?: LocalConnections,
 ) {
   return Layer.mergeAll(
+    localConnections ? makeLocalConnectionsRouteLayer(localConnections) : Layer.empty,
     makeHealthEffectRouteLayer(readiness),
     makeDesktopShutdownEffectRouteLayer(shutdownController),
     makeDesktopComputerEmergencyStopRouteLayer(),
@@ -1688,3 +1691,68 @@ export const staticAndDevEffectRouteLayer = HttpRouter.add(
 const FALLBACK_FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#6b728080" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-fallback="project-favicon"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"/></svg>`;
 
 const FALLBACK_SITE_FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#6b728080" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-fallback="site-favicon"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20M12 2a14.5 14.5 0 0 1 0 20M2 12h20"/></svg>`;
+
+/** Pairing authority stays on the computer; a paired phone cannot mint more devices. */
+function makeLocalConnectionsRouteLayer(connections: LocalConnections) {
+  return HttpRouter.add(
+    "*",
+    "/api/local-connections/*",
+    Effect.gen(function* () {
+      const request = yield* HttpServerRequest.HttpServerRequest;
+      const serverAuth = yield* ServerAuth;
+      const session = yield* request.method === "GET"
+        ? serverAuth.authenticateHttpRequest(makeEffectAuthRequest(request))
+        : requireAuthenticatedMutationRequest;
+      if (session.role !== "owner" || session.accessOrigin !== "local")
+        return HttpServerResponse.jsonUnsafe(
+          { error: "Manage device pairing on this computer." },
+          { status: 403 },
+        );
+      const url = HttpServerRequest.toURL(request)!;
+      if (request.method === "GET" && url.pathname === "/api/local-connections/status")
+        return HttpServerResponse.jsonUnsafe(connections.status());
+      if (
+        request.method === "POST" &&
+        (url.pathname === "/api/local-connections/enable" ||
+          url.pathname === "/api/local-connections/disable")
+      ) {
+        const status = yield* Effect.tryPromise({
+          try: () => connections.setEnabled(url.pathname.endsWith("/enable")),
+          catch: () => ({
+            message: "Could not change local connections. Check your network and try again.",
+            status: 503 as const,
+          }),
+        });
+        return HttpServerResponse.jsonUnsafe(status);
+      }
+      if (request.method === "POST" && url.pathname === "/api/local-connections/invite") {
+        const status = connections.status();
+        if (!status.enabled || !status.endpoints[0] || !status.certificateFingerprint)
+          return HttpServerResponse.jsonUnsafe(
+            { error: "Enable local connections first." },
+            { status: 409 },
+          );
+        const invitation = yield* serverAuth.issuePairingCredential({
+          role: "owner",
+          label: "Sona Android",
+        });
+        return HttpServerResponse.jsonUnsafe({
+          version: 1,
+          kind: "sona-local",
+          endpoint: status.endpoints[0],
+          certificateFingerprint: status.certificateFingerprint,
+          credential: invitation.credential,
+          expiresAt: DateTime.formatIso(invitation.expiresAt),
+        });
+      }
+      return HttpServerResponse.empty({ status: 404 });
+    }).pipe(
+      Effect.catch((error) =>
+        HttpServerResponse.json(
+          { error: "Local connection request failed." },
+          { status: "status" in error && typeof error.status === "number" ? error.status : 500 },
+        ),
+      ),
+    ),
+  );
+}

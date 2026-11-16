@@ -135,3 +135,6 @@ export function desktopFlavorFromProtocol(
 
 /** Deferred features retain their data but have no active consumers. */
 export const HOST_SECRETS_SYNC_ENABLED = false;
+
+/** Sona uses local device pairing; hosted Synara accounts and subscriptions are not shipped. */
+export const SONA_CLOUD_ACCOUNT_ENABLED = false;

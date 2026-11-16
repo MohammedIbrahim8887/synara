@@ -82,3 +82,5 @@ export * from "./accountBilling";
 export * from "./uiLocale";
 
 export * from "./usageLimit";
+
+export type { LocalConnectionStatus, LocalDeviceInvitation } from "./localConnections";

@@ -1,3 +1,10 @@
+const cloudFeature = vi.hoisted(() => ({ enabled: true }));
+vi.mock("@synara/shared/betaFeatures", async (original) => ({
+  ...(await original<typeof import("@synara/shared/betaFeatures")>()),
+  get SONA_CLOUD_ACCOUNT_ENABLED() {
+    return cloudFeature.enabled;
+  },
+}));
 // The account RPC owner boundary: every account method is owner-only —
 // reads included — because the machine account is owner state, and a paired
 // client-role session must neither read nor replace it. These tests iterate
@@ -230,4 +237,35 @@ describe("account RPC owner boundary", () => {
 
     expect(calls().length).toBeGreaterThan(0);
   });
+});
+
+it("Sona refuses all hosted operations before touching credentials or opening a browser", async () => {
+  cloudFeature.enabled = false;
+  try {
+    const { session, calls } = spySession();
+    const openBrowser = vi.fn(() => Effect.void);
+    const handlers = handlersFor(session, openBrowser) as unknown as Record<
+      string,
+      (input?: unknown) => Effect.Effect<unknown, { message: string }>
+    >;
+    for (const [method, handler] of Object.entries(handlers)) {
+      if (method === WS_METHODS.accountStatus) {
+        expect(
+          await Effect.runPromise(provideWsConnectionSession(handler(), OWNER_SESSION)),
+        ).toEqual({ state: "signed-out" });
+      } else {
+        const failure = await Effect.runPromise(
+          provideWsConnectionSession(
+            handler(SAMPLE_INPUTS[method]).pipe(Effect.flip),
+            OWNER_SESSION,
+          ),
+        );
+        expect(failure.message).toBe("Hosted accounts are unavailable in Sona.");
+      }
+    }
+    expect(calls()).toEqual([]);
+    expect(openBrowser).not.toHaveBeenCalled();
+  } finally {
+    cloudFeature.enabled = true;
+  }
 });

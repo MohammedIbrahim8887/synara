@@ -1,3 +1,9 @@
+// Exercise the retained hosted-account implementation explicitly. Sona's disabled
+// product boundary is covered by wsAccountRpc.test.ts and remoteFeaturePolicy.test.ts.
+vi.mock("@synara/shared/betaFeatures", async (original) => ({
+  ...(await original<typeof import("@synara/shared/betaFeatures")>()),
+  SONA_CLOUD_ACCOUNT_ENABLED: true,
+}));
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

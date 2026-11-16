@@ -64,6 +64,7 @@ import {
   PinIcon,
   PlayIcon,
   SearchIcon,
+  SettingsIcon,
   StopFilledIcon,
   TemporaryThreadIcon,
   TerminalIcon,
@@ -419,6 +420,7 @@ import {
 } from "./ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 import {
+  useSidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -534,7 +536,6 @@ import {
   SIDEBAR_ROW_LABEL_TEXT_CLASS_NAME,
   SIDEBAR_SECTION_LABEL_CLASS_NAME,
 } from "../sidebarRowStyles";
-import { AccountFooterControl } from "./account/AccountFooterControl";
 import { SettingsSidebarNav } from "./SettingsSidebarNav";
 import { ComposerPickerMenuPopup } from "./chat/ComposerPickerMenuPopup";
 import { selectSplitView, useSplitViewStore } from "../splitViewStore";
@@ -1379,6 +1380,24 @@ export function SidebarSurfacePicker({
 
 /** Pinned rows sit flush (`px-2`), with no gutter before the glyph. */
 const PINNED_ROW_PADDING_PX = 8;
+
+function SidebarSettingsButton({ active }: { active: boolean }) {
+  const { setOpenMobile } = useSidebar();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  return (
+    <SidebarMenuButton
+      isActive={active}
+      onClick={() => {
+        setOpenMobile(false);
+        void navigate({ to: "/settings", search: { section: "general" } });
+      }}
+    >
+      <SettingsIcon aria-hidden />
+      <span>{t("workspace:toast_settings")}</span>
+    </SidebarMenuButton>
+  );
+}
 
 export default function Sidebar() {
   const { t, formatLocale } = useTranslation();
@@ -8276,7 +8295,6 @@ export default function Sidebar() {
             onClick={handleDesktopUpdateButtonClick}
           />
         ) : null}
-        <AccountFooterControl />
       </>
     ),
     onContextMenu: handleNavContextMenu,
@@ -8815,10 +8833,13 @@ export default function Sidebar() {
           </SidebarContent>
 
           <SidebarFooter
-            // Help and the update button live in the rail; the footer only carries debug tools.
+            // Keep Settings reachable independently of account controls.
             className="gap-2 border-sidebar-border border-t-0 p-2 pt-0 font-system-ui"
           >
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarSettingsButton active={isOnSettings} />
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <div className="flex flex-col gap-1">
                   {DebugFeatureFlagsMenu && showDebugFeatureFlagsMenu && !isOnSettings ? (

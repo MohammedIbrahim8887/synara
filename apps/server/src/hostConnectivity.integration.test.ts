@@ -1,3 +1,8 @@
+// This suite exercises the retained hosted transport; Sona disables its entry points.
+vi.mock("@synara/shared/betaFeatures", async (original) => ({
+  ...(await original<typeof import("@synara/shared/betaFeatures")>()),
+  SONA_CLOUD_ACCOUNT_ENABLED: true,
+}));
 import fs from "node:fs";
 import http from "node:http";
 import { once } from "node:events";
