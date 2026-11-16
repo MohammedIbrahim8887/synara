@@ -8,7 +8,7 @@ import { computerToolInstructions } from "./computerGuidance.ts";
 import { AUTOMATION_AUTHORING_GUIDANCE } from "./automationAuthoringGuidance.ts";
 
 /** Canonical, versioned host policy delivered to every supported provider. */
-export const SYNARA_HARNESS_POLICY_VERSION = "2026-11-13.1";
+export const SYNARA_HARNESS_POLICY_VERSION = "2026-11-16.1";
 export const SYNARA_HARNESS_POLICY_MARKER = `[Synara harness policy ${SYNARA_HARNESS_POLICY_VERSION}]`;
 
 export interface SynaraHarnessCapabilities {
@@ -18,6 +18,13 @@ export interface SynaraHarnessCapabilities {
   /** The `synara_show_visual` tool is offered by this session. */
   readonly inlineVisuals?: boolean | undefined;
 }
+
+/**
+ * Sona renders these fences in replies (web ChatMarkdown → VisualFenceBlock). The
+ * full syntax and component props live in the built-in `visualize` skill.
+ */
+const VISUALIZE_POLICY =
+  "Sona renders ```mermaid fences as diagrams and ```json-render fences as previews. Use mermaid for architecture, flows, sequences, states, and schemas. Use json-render for dashboards, comparisons, and mockups: one JSON {root, elements: {id: {type, props, children}}}, every prop present (null if unused), components Stack Grid Card Heading Text Metric Badge Alert Table List KeyValue Progress Steps Divider (props: visualize skill).";
 
 /** Whether this server offers inline visuals; the gateway catalog uses the same gate. */
 const INLINE_VISUALS_ENABLED = isServerBetaFeatureEnabled(INLINE_VISUALS_BETA_FEATURE);
@@ -76,6 +83,7 @@ export function renderSynaraHarnessPolicy(capabilities: SynaraHarnessCapabilitie
     "For known local files in user-facing Markdown, use readable labels and absolute file URLs, such as [config.ts](file:///absolute/path/config.ts). Relative links are only for the session working directory; otherwise use plain text and never invent a path.",
     'Synara collapses progress and tools under "Worked for...". Final responses must restate every needed scope, plan, decision, result, caveat, instruction, or question. Never request approval using "this", "the above", or another referent available only in collapsed content.',
     "When a structured user-input tool is available for a genuine decision, prefer it and include all decision context in its question or card.",
+    VISUALIZE_POLICY,
     ...controlPolicy,
     ...(capabilities.gatewayControlAvailable && capabilities.enableComputerControl === true
       ? [computerToolInstructions()]

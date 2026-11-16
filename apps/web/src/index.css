@@ -1479,6 +1479,42 @@ label:has(> select#reasoning-effort) select {
   background: var(--app-chat-code-surface);
 }
 
+/* Rendered ```mermaid / ```json-render fences (VisualFenceBlock). */
+.chat-visual-fence {
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0.75rem 0.85rem 0.9rem;
+}
+.chat-visual-fence--expanded {
+  padding: 0;
+}
+.chat-mermaid {
+  display: flex;
+  justify-content: center;
+}
+.chat-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+.chat-mermaid[data-expanded="true"] svg {
+  max-height: calc(100vh - 8rem);
+}
+.chat-visual-fence__error {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.chat-visual-fence__error-source {
+  margin-top: 0.5rem;
+  white-space: pre-wrap;
+  font-family: var(--font-chat-code-family);
+  color: var(--muted-foreground);
+}
+.chat-generative-ui {
+  min-width: 0;
+  font-family: var(--font-ui-family);
+}
+
 .chat-markdown .chat-markdown-codeblock__header {
   display: flex;
   align-items: center;

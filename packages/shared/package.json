@@ -36,6 +36,10 @@
       "types": "./src/mcpConnectors.ts",
       "import": "./src/mcpConnectors.ts"
     },
+    "./visualizeSkill": {
+      "types": "./src/visualizeSkill.ts",
+      "import": "./src/visualizeSkill.ts"
+    },
     "./inlineVisual": {
       "types": "./src/inlineVisual.ts",
       "import": "./src/inlineVisual.ts"

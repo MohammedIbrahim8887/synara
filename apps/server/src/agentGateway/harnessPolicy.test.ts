@@ -157,10 +157,11 @@ describe("Synara harness policy", () => {
 
   it("keeps the gateway policy below its prompt budget", () => {
     // Role guidance adds one line; keep the optional visual guidance in its own budget.
-    assert.isAtMost(renderSynaraHarnessPolicy({ gatewayControlAvailable: true }).length, 6_250);
+    // The always-on mermaid/json-render rule adds ~440 characters.
+    assert.isAtMost(renderSynaraHarnessPolicy({ gatewayControlAvailable: true }).length, 6_700);
     assert.isAtMost(
       renderSynaraHarnessPolicy({ gatewayControlAvailable: true, inlineVisuals: true }).length,
-      6_380,
+      6_830,
     );
   });
 
