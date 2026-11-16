@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Sona",
+    "slug": "sona-mobile",
+    "version": "0.1.0",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "package": "dev.sona.mobile",
+      "permissions": ["CAMERA", "INTERNET", "ACCESS_LOCAL_NETWORK"],
+      "allowBackup": false,
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Scan the pairing code shown by Sona on your computer.",
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "icon": "./assets/icon.png"
+  }
+}
