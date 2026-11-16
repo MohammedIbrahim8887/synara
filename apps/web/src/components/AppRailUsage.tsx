@@ -230,7 +230,7 @@ export function AppRailUsage({ onOpenUsageSettings }: { onOpenUsageSettings: () 
   }
 
   return (
-    <>
+    <div className="flex max-h-[40vh] min-h-0 shrink flex-col items-center gap-1.5 overflow-y-auto">
       {accounts.map((account) => (
         <AppRailUsageRing
           key={account.instance.instanceId}
@@ -244,6 +244,6 @@ export function AppRailUsage({ onOpenUsageSettings }: { onOpenUsageSettings: () 
           onOpenUsageSettings={onOpenUsageSettings}
         />
       ))}
-    </>
+    </div>
   );
 }

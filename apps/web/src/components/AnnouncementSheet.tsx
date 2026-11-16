@@ -32,8 +32,10 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 
-const ACTION_BUTTON_CLASS_NAME = "flex-1 rounded-[10px] text-ui-lg sm:text-ui-lg";
-const FEATURE_ACTION_BUTTON_CLASS_NAME = "min-w-28 px-5 text-ui-lg sm:text-ui-lg";
+// Grow with the Settings font size instead of clamping text into a fixed-height row.
+const ACTION_BUTTON_PADDING_CLASS_NAME = "h-auto min-h-11 py-2.5 sm:h-auto sm:min-h-10";
+const ACTION_BUTTON_CLASS_NAME = `flex-1 rounded-[10px] text-ui-lg sm:text-ui-lg ${ACTION_BUTTON_PADDING_CLASS_NAME}`;
+const FEATURE_ACTION_BUTTON_CLASS_NAME = `min-w-28 px-5 text-ui-lg sm:text-ui-lg ${ACTION_BUTTON_PADDING_CLASS_NAME}`;
 
 interface AnnouncementSheetContent {
   // Decorative scene rendered inside the hero band; the band owns its size and backdrop.
