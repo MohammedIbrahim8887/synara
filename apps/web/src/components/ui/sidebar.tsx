@@ -23,7 +23,6 @@ import { Schema } from "effect";
 import { useTranslation } from "~/i18n";
 
 const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_WIDTH_MOBILE = "calc(100vw - var(--spacing(3)))";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_RESIZE_DEFAULT_MIN_WIDTH = 16 * 16;
 
@@ -297,8 +296,12 @@ function Sidebar({
       <SidebarInstanceContext.Provider value={instanceContextValue}>
         <Sheet onOpenChange={setOpenMobile} open={openMobile} {...props}>
           <SheetPopup
+            // Preserve the tree and its subscriptions instead of rebuilding them on every tap.
+            keepMounted
+            // The popup owns its inline style (nested-dialog vars), so an inline
+            // `--sidebar-width` is dropped and the drawer shrinks to its content.
             className={cn(
-              "w-(--sidebar-width) max-w-none bg-sidebar p-0 text-sidebar-foreground",
+              "w-[calc(100vw-(--spacing(3)))] max-w-none bg-sidebar p-0 text-sidebar-foreground",
               className,
             )}
             data-mobile="true"
@@ -306,11 +309,6 @@ function Sidebar({
             data-slot="sidebar"
             showCloseButton={false}
             side={side}
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              } as React.CSSProperties
-            }
           >
             <SheetHeader className="sr-only">
               <SheetTitle>{t("workspace:sidebar")}</SheetTitle>

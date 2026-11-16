@@ -1,3 +1,5 @@
+import { useSonaDesktop } from "../sonaDesktop";
+import { SonaIsland } from "../components/SonaIsland";
 import { readWorkspaceFrame } from "../lib/hosts/workspaceFrame";
 import { subscribeWorkspaceKeybindings } from "../lib/hosts/workspaceKeybindings";
 import { onControllerStateChange } from "../lib/hosts/connectionClients";
@@ -54,7 +56,6 @@ import { SafariAccessOnboarding } from "../components/SafariAccessOnboarding";
 import { NewThreadDefaultsSyncCoordinator } from "../components/NewThreadDefaultsSyncCoordinator";
 import { settingsChangedBeyondNewThreadDefaults } from "@synara/shared/serverSettings";
 import { QueuedComposerDrainCoordinator } from "../components/QueuedComposerDrainCoordinator";
-import { GlobalAccountDialogs } from "../components/account/GlobalAccountDialogs";
 import { HostDiscoverabilityPrompt } from "../components/hosts/HostDiscoverabilityPrompt";
 import { FeedbackDialog } from "../components/FeedbackDialog";
 import { SETTINGS_TARGETS } from "../settingsNavigation";
@@ -306,6 +307,7 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootRouteView() {
+  const isSonaIsland = Boolean(useSonaDesktop()?.island);
   const { t } = useTranslation();
 
   useAppTypography();
@@ -386,15 +388,14 @@ function RootRouteView() {
           <GlobalShortcutsDialog />
           <BrowserVaultDialog />
           <GlobalFeedbackDialog />
-          <GlobalAccountDialogs />
           {/* Mounted globally because the host it asks about registers itself
               at sign-in, wherever the user happens to be in the app. */}
-          {!readWorkspaceFrame() && <HostDiscoverabilityPrompt />}
-          {!readWorkspaceFrame() && <GlobalWhatsNewSurface />}
-          <TaskCompletionNotifications />
+          {!isSonaIsland && !readWorkspaceFrame() && <HostDiscoverabilityPrompt />}
+          {!isSonaIsland && !readWorkspaceFrame() && <GlobalWhatsNewSurface />}
+          {!isSonaIsland && <TaskCompletionNotifications />}
           <QueuedComposerDrainCoordinator />
           <NewThreadDefaultsSyncCoordinator />
-          {!readWorkspaceFrame() && (
+          {!isSonaIsland && !readWorkspaceFrame() && (
             <>
               {/* Beta welcome resolves the first-run gate while Safari is queued. */}
               <BetaWelcomeDialog />
@@ -411,7 +412,13 @@ function RootRouteView() {
           <GlobalProjectImportDialog />
           <AppSnapCoordinator />
           <DesktopProjectBootstrap />
-          <Outlet />
+          {isSonaIsland ? (
+            <SonaIsland>
+              <Outlet />
+            </SonaIsland>
+          ) : (
+            <Outlet />
+          )}
         </AnchoredToastProvider>
       </ToastProvider>
       {desktopChrome}

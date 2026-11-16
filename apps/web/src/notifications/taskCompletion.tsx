@@ -102,6 +102,15 @@ async function showSystemThreadNotification(
 ): Promise<boolean> {
   const { body, title } = copy;
 
+  if (window.sonaDesktop) {
+    try {
+      await window.sonaDesktop.notify({ title: title.slice(0, 160), body: body.slice(0, 1000) });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   if (window.desktopBridge) {
     const supported = await window.desktopBridge.notifications.isSupported();
     if (!supported) {
@@ -404,7 +413,7 @@ export function TaskCompletionNotifications() {
 export function buildNotificationSettingsSupportText(
   permissionState: BrowserNotificationPermissionState,
 ): string {
-  if (isElectron) {
+  if (isElectron || (typeof window !== "undefined" && window.sonaDesktop)) {
     return t("common:desktopAppNotificationsUseYourOperatingSystemNotificationCenter");
   }
   switch (permissionState) {

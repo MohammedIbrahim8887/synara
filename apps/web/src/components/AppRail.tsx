@@ -247,6 +247,7 @@ export function AppRail({
   const fixedItems = editorItems ? items.map((item) => ({ ...item, active: false })) : items;
   return (
     <nav
+      data-slot="app-rail"
       aria-label={t("common:primary")}
       onContextMenu={onContextMenu}
       className="flex w-(--app-rail-width) shrink-0 flex-col items-center gap-1.5 pt-2.5 pb-2.5 font-system-ui"

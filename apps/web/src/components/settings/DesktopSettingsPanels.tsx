@@ -100,7 +100,7 @@ export function NotificationsSettingsPanel({
       return;
     }
 
-    if (isElectron) {
+    if (isElectron || window.sonaDesktop) {
       updateSettings({ enableSystemTaskCompletionNotifications: true });
       return;
     }
@@ -125,6 +125,22 @@ export function NotificationsSettingsPanel({
     const title = t("settings:activityNotification");
     const body = "Notification test for chats and terminal agents.";
 
+    if (window.sonaDesktop) {
+      try {
+        await window.sonaDesktop.notify({ title, body });
+        toastManager.add({
+          type: "success",
+          title: t("settings:testNotificationSent"),
+          description: t("settings:yourOperatingSystemShouldShowTheNotification"),
+        });
+      } catch {
+        toastManager.add({
+          type: "error",
+          title: t("settings:notifications_notificationsUnavailable"),
+        });
+      }
+      return;
+    }
     if (window.desktopBridge) {
       const shown = await window.desktopBridge.notifications.show({ title, body, silent: false });
       toastManager.add({

@@ -4,11 +4,14 @@ import Electrobun, { BrowserWindow, PATHS, Utils } from "electrobun/main";
 import { startElectrobunBackend } from "../../src/electrobunBackend";
 import { registerElectrobunExternalLinks } from "../../src/electrobunExternalLinks";
 
+import { createDesktopCompanion } from "./desktopCompanion";
+
 try {
   const backend = await startElectrobunBackend(
     path.join(PATHS.RESOURCES_FOLDER, "app", "runtime"),
     process.env.SONA_PREVIEW_HOME ?? path.join(homedir(), ".sona"),
   );
+  const companion = createDesktopCompanion(backend.origin, backend.url);
   const window = new BrowserWindow({
     title: "Sona — Electrobun Preview",
     url: backend.url,
@@ -18,6 +21,7 @@ try {
     navigationRules: JSON.stringify([`${backend.origin}/*`]),
     frame: { x: 100, y: 80, width: 1280, height: 850 },
   });
+  companion.attach(window);
   const dispose = registerElectrobunExternalLinks(
     Electrobun.events,
     window.webview.id,
@@ -28,6 +32,7 @@ try {
   window.on("close", () => {
     closing = true;
     dispose();
+    companion.stop();
     void backend.stop().finally(() => Utils.quit());
   });
   void backend.closed.then(async () => {

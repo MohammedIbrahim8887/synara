@@ -3999,3 +3999,23 @@ diffs-container {
 [data-dock-maximized="true"] .editor-markdown-preview__body {
   max-width: 1120px;
 }
+
+/* The companion keeps chat controls while reserving its compact window for the session. */
+/* The notch island window is transparent; only the pill/panel paints. */
+html.sona-island-window,
+html.sona-island-window body {
+  background: transparent;
+}
+/* App-wide toasts (updates, providers) belong to the main window, not the notch. */
+html.sona-island-window [data-slot="toast-viewport"] {
+  display: none;
+}
+.sona-island [data-slot="sidebar-container"],
+.sona-island [data-slot="sidebar-gap"],
+.sona-island [data-slot="app-rail"] {
+  display: none;
+}
+.sona-island [data-slot="sidebar-wrapper"] {
+  min-height: 0;
+  height: 100%;
+}

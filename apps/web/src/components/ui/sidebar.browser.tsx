@@ -1,6 +1,6 @@
 import "../../index.css";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cdp, page } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -149,4 +149,48 @@ describe("sidebar toggles", () => {
       }
     },
   );
+});
+
+it("keeps mobile sidebar content mounted and unfocusable while closed", async () => {
+  await page.viewport(412, 915);
+  let mounts = 0;
+  function Content() {
+    useEffect(() => {
+      mounts += 1;
+    }, []);
+    return <input aria-label="Sidebar draft" defaultValue="Saved draft" />;
+  }
+  const screen = await render(
+    <SidebarProvider>
+      <Controls name="mobile" />
+      <Sidebar>
+        <Content />
+      </Sidebar>
+    </SidebarProvider>,
+  );
+  try {
+    await expect.poll(() => mounts).toBe(1);
+    await expect
+      .element(page.getByRole("textbox", { name: "Sidebar draft", includeHidden: true }))
+      .not.toBeVisible();
+    for (let i = 0; i < 2; i += 1) {
+      await page.getByRole("button", { name: "Toggle mobile" }).click();
+      await expect.element(page.getByRole("textbox", { name: "Sidebar draft" })).toBeVisible();
+      if (i === 0)
+        await page.getByRole("textbox", { name: "Sidebar draft" }).fill("Keep this draft");
+      await page.getByRole("textbox", { name: "Sidebar draft" }).click();
+      document
+        .querySelector<HTMLInputElement>('[aria-label="Sidebar draft"]')!
+        .dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      await expect
+        .element(page.getByRole("textbox", { name: "Sidebar draft", includeHidden: true }))
+        .not.toBeVisible();
+    }
+    expect(mounts).toBe(1);
+    expect(document.querySelector<HTMLInputElement>('[aria-label="Sidebar draft"]')!.value).toBe(
+      "Keep this draft",
+    );
+  } finally {
+    await screen.unmount();
+  }
 });

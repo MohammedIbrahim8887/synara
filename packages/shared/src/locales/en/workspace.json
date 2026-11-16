@@ -1047,5 +1047,11 @@
   "childThreadsWorking_one": "{{count}} running",
   "childThreadsWorking_other": "{{count}} running",
   "childThreadsDoneCount_one": "+{{count}} done",
-  "childThreadsDoneCount_other": "+{{count}} done"
+  "childThreadsDoneCount_other": "+{{count}} done",
+  "islandRunning": "{{count}} running sessions",
+  "islandSessions": "Sessions",
+  "islandCollapse": "Collapse island",
+  "islandIdle": "No sessions running. Start a session in Sona and follow it here.",
+  "islandNeedsYou": "Needs your answer",
+  "islandWorking": "Working"
 }
