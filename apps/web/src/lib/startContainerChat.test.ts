@@ -211,3 +211,9 @@ describe("startContainerChat", () => {
     expect(applyThreadDefaults).not.toHaveBeenCalled();
   });
 });
+
+// Exercise retained group algorithms independently of Sona's disabled product surface.
+vi.mock("../betaFeatures", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../betaFeatures")>()),
+  GROUPS_ON: true,
+}));

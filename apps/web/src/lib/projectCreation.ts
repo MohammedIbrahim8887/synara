@@ -1,3 +1,4 @@
+import { SPACES_ON } from "../betaFeatures";
 // FILE: projectCreation.ts
 // Purpose: Shared project-create flow for UI entrypoints that need duplicate recovery.
 // Layer: Web orchestration helper
@@ -89,7 +90,11 @@ export async function createOrRecoverProjectFromPath(input: {
       // A project created while a space is active belongs to that space — filing it
       // afterwards would bounce the sidebar back to Void to follow the new project.
       // Callers with an explicit destination (the Create Project dialog) override it.
-      spaceId: input.spaceId !== undefined ? input.spaceId : readActiveSpaceId(),
+      spaceId: SPACES_ON
+        ? input.spaceId !== undefined
+          ? input.spaceId
+          : readActiveSpaceId()
+        : null,
       createdAt,
     });
 

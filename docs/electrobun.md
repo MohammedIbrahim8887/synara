@@ -1,7 +1,7 @@
 # Electrobun migration status
 
-The production desktop still uses Electron. Electrobun 2.0.6 is an isolated
-qualification target; it is not a replacement desktop release. Do not switch
+The upstream production desktop still uses Electron. Electrobun 2.0.6 has an isolated
+qualification target and a standalone Sona preview; neither has full native parity. Do not switch
 the default launcher or publish its artifacts until the parity gates below pass.
 
 ## Implemented foundation
@@ -122,7 +122,52 @@ Other schemes and other view IDs are rejected; top-level navigation stays within
 the local app origin. Do not reuse this popup policy for untrusted guest browsers.
 Authorization URLs are never logged.
 
+## Standalone Sona installer (Apple Silicon Mac)
+
+With Node 24, the pinned Bun, and Hutch available on `PATH`, run:
+
+```sh
+bun run dist:sona:preview
+```
+
+This builds the production web client and backend, stages the installed production
+dependency graph (including the repository's patches), bundles Node and CEF, and
+creates `release/sona-preview/Sona-0.1.0-preview-macos-arm64.dmg`. Open the DMG,
+drag Sona to Applications, then open Sona. No checkout, separately installed Node,
+or development server is required. Provider CLIs, accounts, and external tools
+still have their usual requirements.
+
+The bundle uses the isolated `dev.sona.desktop.preview` identity in Electrobun's
+development channel and stores backend data in `~/.sona`. It does not import or
+modify Synara Stable/Beta data or configure an update feed. A stored loopback port
+keeps browser preferences stable across launches; a concurrent instance is refused.
+The backend uses its existing stdin parent-lifetime lease and the renderer uses
+the existing authenticated pairing bootstrap. `SONA_PREVIEW_HOME` can select a
+separate data directory for local smoke tests.
+
+This is an ad-hoc signed local preview, **not notarized**. Windows, Intel Mac,
+and Linux installers are not produced by this command. Native Electron-only
+services listed above remain unported. Packaging uses a regular application
+bundle because Electrobun 2.0.6's self-extracting archive did not preserve the
+runtime's dependency symlinks in the local launch test. The dependency tree is
+staged after Hutch builds the shell and is then included directly in the DMG.
+
 Native verification on macOS ARM64 / Electrobun 2.0.6 reproduced the blocked
 async popup, then confirmed a request reached a loopback test page in the default
 browser after both fixes. This proves browser launching, not a completed Composio
 login or tool execution. Other platforms remain unverified.
+
+## Standalone preview verification (2026-11-16)
+
+- Formatting, lint (existing warnings), workspace/native typechecks, and the
+  Windows process-boundary check passed. This does not qualify Windows packaging.
+- Web suite: 6,184 passed, 3 skipped. Scripts suite: 396 passed. Focused reruns
+  passed for backend lifetime/external links (10), dependency staging (2), shared
+  feature policy (21), server gates/errors (12), and retained coordinator restart (1).
+- A copy outside the checkout started its bundled backend and authenticated CEF
+  client without development servers. Native close triggered backend shutdown.
+  A browser smoke against that bundled backend passed onboarding and redirects
+  for `/inbox`, `/hubs`, `/spaces`, `/tasks`, and `/kanban`.
+- The broad backend run encountered a recovery-snapshot test failure and did not
+  finish before interruption. Full backend-suite success is not claimed. Live
+  provider turns, completed Composio OAuth, and tool execution remain unverified.

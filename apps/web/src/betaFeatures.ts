@@ -30,17 +30,19 @@ export const isBetaFeatureOn = (feature: string): boolean =>
   isBetaFeatureEnabled(feature, DESKTOP_FLAVOR);
 
 /**
- * Hubs is available in Stable and Beta. The shared feature policy also controls
+ * The shared feature policy controls
  * server APIs, background work, and whether saved hub folders act as containers.
  */
+export const SPACES_ON = isBetaFeatureOn("spaces");
+
 export const GROUPS_ON = isBetaFeatureOn(GROUPS_BETA_FEATURE);
 
 /**
- * Inbox is available in Stable and Beta. Tasks within it retain their separate gate.
+ * Inbox follows the shared product policy.
  */
 export const INBOX_ON = isBetaFeatureOn(INBOX_BETA_FEATURE);
 
-/** Account-saved Inbox history is available in Stable and Beta. */
+/** Account-saved Inbox history follows the shared product policy. */
 export const ACCOUNT_INBOX_ON = isBetaFeatureOn(ACCOUNT_INBOX_BETA_FEATURE);
 
 /**

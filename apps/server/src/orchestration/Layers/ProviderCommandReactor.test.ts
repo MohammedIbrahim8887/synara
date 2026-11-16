@@ -23017,6 +23017,8 @@ describe("ProviderCommandReactor", () => {
   );
 
   it("restarts a live coordinator session when the group loses the flag", async () => {
+    // Retained coordinator behavior is tested independently of Sona's product gate.
+    vi.spyOn(groupsBetaGate, "isServerGroupsEnabled").mockReturnValue(true);
     const coordinatorConfigState: {
       enabled?: boolean;
       pausedAt?: string | null;

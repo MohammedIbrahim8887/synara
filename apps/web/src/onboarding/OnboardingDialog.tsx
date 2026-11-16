@@ -1,5 +1,5 @@
 // FILE: OnboardingDialog.tsx
-// Purpose: First-run onboarding as a full-window experience: welcome → agents → connectors → tasks →
+// Purpose: First-run onboarding as a full-window experience: welcome → agents → connectors →
 //          pocket → account → pair → ready, over the character-built landscape. Remote
 //          steps appear only when this build can pair a phone; pairing only once signed in.
 //          Owns step navigation and the per-run results the final receipt reads.
@@ -39,12 +39,7 @@ import { useOnboardingDialogStore } from "./onboardingDialogStore";
 import { OnboardingScreen } from "./OnboardingScreen";
 import { FitStage } from "./stage/FitStage";
 import { PROVIDER_RING_SIZE, ProviderRing } from "./stage/ProviderRing";
-import {
-  POCKET_STAGE_SIZE,
-  PocketIllustration,
-  TASKS_STAGE_SIZE,
-  TasksIllustration,
-} from "./stage/StageIllustrations";
+import { POCKET_STAGE_SIZE, PocketIllustration } from "./stage/StageIllustrations";
 import { ONBOARDING_STAGE_CARD_CLASS_NAME } from "./stage/stageTokens";
 import { AccountStep } from "./steps/AccountStep";
 import { PairStep } from "./steps/PairStep";
@@ -254,24 +249,6 @@ function OnboardingFlow(props: {
           >
             <div className="px-8 py-8">
               <McpConnectorsSettingsPanel active />
-            </div>
-          </OnboardingScreen>
-        );
-      case "tasks":
-        return (
-          <OnboardingScreen
-            number={stepNumber}
-            lead={t("onboarding:tasksLead")}
-            statement={t("onboarding:tasksStatement")}
-            description={t("onboarding:tasksDescription", { app: APP_BASE_NAME })}
-            secondary={{ label: t("common:app_back"), onClick: goBack }}
-            primary={{ label: t("git:continue"), onClick: goNext }}
-            stageClassName="overflow-hidden"
-          >
-            <div className="size-full px-8 py-10">
-              <FitStage {...TASKS_STAGE_SIZE}>
-                <TasksIllustration />
-              </FitStage>
             </div>
           </OnboardingScreen>
         );

@@ -14,9 +14,9 @@ afterEach(() => {
 });
 
 it.each([
-  [SYNARA_PRODUCTION_BUNDLE_ID, true],
-  [SYNARA_BETA_BUNDLE_ID, true],
-] as const)("allows saved Inbox recaps on the host bundle (%s)", async (bundleId, enabled) => {
+  [SYNARA_PRODUCTION_BUNDLE_ID, false],
+  [SYNARA_BETA_BUNDLE_ID, false],
+] as const)("disables saved Inbox recaps on the host bundle (%s)", async (bundleId, enabled) => {
   vi.stubEnv(SYNARA_DESKTOP_BUNDLE_ID_ENV, bundleId);
   vi.resetModules();
   const { isServerBetaFeatureEnabled } = await import("./betaFeatureGate");

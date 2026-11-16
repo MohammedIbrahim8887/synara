@@ -1,3 +1,4 @@
+import { SPACES_ON } from "../betaFeatures";
 // FILE: _chat.index.tsx
 // Purpose: Restores the last chat route on app launch, falling back to a fresh home-chat draft.
 //          Also the landing for a Space that has nothing to open.
@@ -34,7 +35,9 @@ export interface ChatIndexSearch {
 
 function ChatIndexRouteView() {
   const { handleNewChat } = useHandleNewChat();
-  const landingSpaceKey = Route.useSearch({ select: (search) => search.space });
+  const landingSpaceKey = Route.useSearch({
+    select: (search) => (SPACES_ON ? search.space : undefined),
+  });
   const threadIds = useStore((state) => state.threadIds ?? EMPTY_THREAD_IDS);
   const projects = useStore((state) => state.projects);
   const summariesByProjectId = useProjectAgentSummariesStore((state) => state.summariesByProjectId);

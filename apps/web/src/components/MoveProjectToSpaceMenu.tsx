@@ -1,3 +1,4 @@
+import { SPACES_ON } from "../betaFeatures";
 // FILE: MoveProjectToSpaceMenu.tsx
 // Purpose: Shared Space destination menu for local and remote sidebar projects.
 
@@ -33,6 +34,7 @@ export function MoveProjectToSpaceMenu({
   children?: ReactNode;
 }) {
   const { t } = useTranslation();
+  if (!SPACES_ON) return null;
   return (
     <MenuSub keepOpenOnFocusOut>
       <MenuSubTrigger className={SIDEBAR_CONTEXT_MENU_ITEM_CLASS_NAME}>

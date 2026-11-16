@@ -1,7 +1,7 @@
 // FILE: groupsBetaGate.ts
 // Purpose: Applies the shared Hubs feature policy. When disabled, group APIs
 //          and background work are refused and saved group threads stay readable.
-//          Hubs is currently enabled in Stable and Beta.
+//          Sona disables Hubs in every channel while preserving saved records.
 // Layer: Runtime gate (wraps ProjectAgentService; read by wsRpc and the gateway)
 // Exports: GROUPS_BETA_ONLY_MESSAGE, isServerGroupsEnabled, isGroupProjectCommand,
 //          gateProjectAgentServiceForStable

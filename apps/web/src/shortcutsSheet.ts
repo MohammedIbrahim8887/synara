@@ -12,7 +12,7 @@ import {
   type ResolvedKeybindingRule,
   type ResolvedKeybindingsConfig,
 } from "@synara/contracts";
-import { NATIVE_EDITOR_ON } from "./betaFeatures";
+import { NATIVE_EDITOR_ON, SPACES_ON } from "./betaFeatures";
 import { isMacPlatform } from "./lib/utils";
 import { formatShortcutLabel, resolveKeybindingForCommand } from "./keybindings";
 import { commandForProjectScript } from "./projectScripts";
@@ -95,17 +95,7 @@ const AVAILABLE_NOW_DEFINITIONS: readonly ShortcutDefinition[] = [
     label: "Import thread",
     description: "Bring an existing conversation into the current workspace.",
   },
-  {
-    command: "space.previous",
-    label: "Previous space",
-    description: "Switch to the previous project space and restore its last working context.",
-  },
-  {
-    command: "space.next",
-    label: "Next space",
-    description: "Switch to the next project space and restore its last working context.",
-  },
-  ...SPACE_JUMP_DEFINITIONS,
+  ...(SPACES_ON ? SPACE_JUMP_DEFINITIONS : []),
   {
     command: "chat.new",
     label: "New thread",
@@ -490,7 +480,11 @@ export function listShortcutEditorDefinitions(): ShortcutEditorDefinition[] {
     },
   ];
 
-  const covered = new Set(definitions.flatMap((definition) => definition.commands));
+  const availableDefinitions = definitions.filter(
+    (definition) =>
+      SPACES_ON || !definition.commands.some((command) => command.startsWith("space.")),
+  );
+  const covered = new Set(availableDefinitions.flatMap((definition) => definition.commands));
   // Keep editor commands aligned with the editing engine available on this host.
   const hidden = new Set(
     NATIVE_EDITOR_ON
@@ -498,17 +492,22 @@ export function listShortcutEditorDefinitions(): ShortcutEditorDefinition[] {
       : singleCommandEditorDefinitions(CODE_EDITOR_DEFINITIONS).flatMap((d) => d.commands),
   );
   for (const command of STATIC_KEYBINDING_COMMANDS) {
-    if (covered.has(command) || hidden.has(command) || command.startsWith("terminal.split")) {
+    if (
+      covered.has(command) ||
+      hidden.has(command) ||
+      command.startsWith("terminal.split") ||
+      (!SPACES_ON && command.startsWith("space."))
+    ) {
       continue;
     }
-    definitions.push({
+    availableDefinitions.push({
       id: command,
       label: command,
       description: "Assign a shortcut to this built-in command.",
       commands: [command],
     });
   }
-  return definitions;
+  return availableDefinitions;
 }
 
 function modSlashLabel(platform: string): string {

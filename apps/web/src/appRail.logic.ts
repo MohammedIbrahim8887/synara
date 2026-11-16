@@ -5,6 +5,7 @@
 // Exports: rail item ids/types, rail item order and visibility, railItemForPathname,
 //          reconcileActiveRailItem, buildRailSpacesSections
 
+import { isBetaFeatureOn } from "./betaFeatures";
 import type { ProjectId, SpaceId } from "@synara/contracts";
 
 import {
@@ -78,6 +79,7 @@ export interface RailAvailability {
 
 /** Whether an item exists on this host at all: the rail and its Customize list agree. */
 export function isRailItemAvailable(id: RailOrderableItemId, availability: RailAvailability) {
+  if (!isBetaFeatureOn(id === "studio" ? "groups" : id)) return false;
   if (id === "studio") return availability.studioAvailable;
   if (id === "inbox") return availability.inboxAvailable;
   return true;

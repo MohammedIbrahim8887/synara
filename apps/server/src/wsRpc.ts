@@ -1630,6 +1630,16 @@ const makeWsRpcHandlersLayer = () =>
               ) {
                 return yield* Effect.fail(new WsRpcError({ message: REMOTE_NATIVE_UNAVAILABLE }));
               }
+              if (
+                !isServerBetaFeatureEnabled("spaces") &&
+                (command.type.startsWith("space.") ||
+                  ((command.type === "project.create" || command.type === "project.meta.update") &&
+                    command.spaceId != null))
+              ) {
+                return yield* Effect.fail(
+                  new WsRpcError({ message: "Spaces are unavailable in Sona." }),
+                );
+              }
               // Refuse creating or re-kinding a Hub if the shared feature policy disables it.
               if (!isServerGroupsEnabled() && isGroupProjectCommand(command)) {
                 return yield* Effect.fail(new WsRpcError({ message: GROUPS_BETA_ONLY_MESSAGE }));

@@ -71,19 +71,23 @@ export function AppRailMoreMenu({
             <MenuSeparator />
           </>
         ) : null}
-        <MenuGroup>
-          <MenuGroupLabel>{t("common:spacesInTheRail")}</MenuGroupLabel>
-          {spaces.map((entry) => (
-            <MenuCheckboxItem
-              key={entry.key}
-              checked={pinnedKeys.has(entry.key)}
-              onCheckedChange={() => onToggleShortcut(entry.key)}
-            >
-              <span className="min-w-0 truncate">{entry.label}</span>
-            </MenuCheckboxItem>
-          ))}
-        </MenuGroup>
-        <MenuSeparator />
+        {spaces.length > 0 && (
+          <>
+            <MenuGroup>
+              <MenuGroupLabel>{t("common:spacesInTheRail")}</MenuGroupLabel>
+              {spaces.map((entry) => (
+                <MenuCheckboxItem
+                  key={entry.key}
+                  checked={pinnedKeys.has(entry.key)}
+                  onCheckedChange={() => onToggleShortcut(entry.key)}
+                >
+                  <span className="min-w-0 truncate">{entry.label}</span>
+                </MenuCheckboxItem>
+              ))}
+            </MenuGroup>
+            <MenuSeparator />
+          </>
+        )}
         <MenuGroup>
           <MenuGroupLabel>{t("common:projectsInTheRail")}</MenuGroupLabel>
           {projects.length === 0 ? (

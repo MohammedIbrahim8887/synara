@@ -348,3 +348,9 @@ describe("applyGroupWorkerRoutingDefaults", () => {
     expect(draft?.modelSelectionByProvider.claudeAgent?.model).toBe("claude-opus-4-5");
   });
 });
+
+// Exercise retained group algorithms independently of Sona's disabled product surface.
+vi.mock("../betaFeatures", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../betaFeatures")>()),
+  GROUPS_ON: true,
+}));

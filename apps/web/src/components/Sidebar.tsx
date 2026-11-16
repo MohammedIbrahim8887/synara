@@ -356,7 +356,7 @@ import { RenameThreadDialog } from "./RenameThreadDialog";
 import { SnoozeUntilDialog } from "./SnoozeUntilDialog";
 import { SNOOZE_PRESETS } from "../lib/threadSnooze";
 import ReleaseHistoryDialog from "./ReleaseHistoryDialog";
-import { GROUPS_ON, INBOX_ON, isBetaFeatureOn } from "../betaFeatures";
+import { GROUPS_ON, INBOX_ON, SPACES_ON, isBetaFeatureOn } from "../betaFeatures";
 import { WHATS_NEW_ENTRIES } from "../whatsNew/entries";
 import { sortEntriesByVersionDesc } from "../whatsNew/logic";
 import { SidebarSearchPalette, type SidebarSearchPaletteMode } from "./SidebarSearchPalette";
@@ -1398,12 +1398,18 @@ export default function Sidebar() {
   const pendingActiveSpaceId = useSpacesUiStore(
     (store) => store.pendingActiveSpace?.spaceId ?? null,
   );
-  const activeSpaceId = resolveActiveSpaceId(storedActiveSpaceId, spaces, pendingActiveSpaceId);
+  const activeSpaceId = SPACES_ON
+    ? resolveActiveSpaceId(storedActiveSpaceId, spaces, pendingActiveSpaceId)
+    : null;
   const threadsHydrated = useStore((store) => store.threadsHydrated);
   // Nav destinations live in the rail (portaled next to this panel) and the panel shows
   // Home or Spaces.
   const isMobile = useIsMobile();
-  const railActiveItem = useRailShellStore((store) => store.activeItem);
+  const railActiveItem = useRailShellStore((store) =>
+    isBetaFeatureOn(store.activeItem === "studio" ? "groups" : store.activeItem)
+      ? store.activeItem
+      : "home",
+  );
   const railPanelView = useRailShellStore((store) => store.panelView);
   const railSpacesProjectId = useRailShellStore((store) => store.spacesProjectId);
   const selectRailPanelItem = useRailShellStore((store) => store.selectPanelItem);
@@ -2103,6 +2109,7 @@ export default function Sidebar() {
   );
   const filterThreadsToActiveSpace = useCallback(
     (threads: readonly SidebarThreadSummary[]) => {
+      if (!SPACES_ON) return [...threads];
       const state = useStore.getState();
       const selection = useSpacesUiStore.getState();
       return filterSidebarThreadsBySpace({
@@ -3052,7 +3059,10 @@ export default function Sidebar() {
   }, [setCreateProjectDialogOpen]);
 
   const activeSpaceProjects = useMemo(
-    () => ordinarySpaceProjects.filter((project) => (project.spaceId ?? null) === activeSpaceId),
+    () =>
+      ordinarySpaceProjects.filter(
+        (project) => !SPACES_ON || (project.spaceId ?? null) === activeSpaceId,
+      ),
     [activeSpaceId, ordinarySpaceProjects],
   );
   const currentProjectShortcutTargetId = useMemo(
@@ -4918,9 +4928,10 @@ export default function Sidebar() {
             ? section !== "studio"
             : section === undefined ||
               section === "studio" ||
-              (remoteProjectSpaces.get(
-                checkoutKey({ environmentId, projectId: thread.projectId }),
-              ) ?? null) !== activeSpaceId)
+              (SPACES_ON &&
+                (remoteProjectSpaces.get(
+                  checkoutKey({ environmentId, projectId: thread.projectId }),
+                ) ?? null) !== activeSpaceId))
         )
           return [];
         return [
@@ -4954,7 +4965,7 @@ export default function Sidebar() {
   const remoteProjectsBySpace = useMemo(() => {
     const projectsBySpace = new Map<SpaceId | null, WorkspaceProjectEntry[]>();
     for (const entry of remoteProjects) {
-      const spaceId = remoteProjectSpaces.get(entry.key) ?? null;
+      const spaceId = SPACES_ON ? (remoteProjectSpaces.get(entry.key) ?? null) : null;
       const entries = projectsBySpace.get(spaceId);
       if (entries) entries.push(entry);
       else projectsBySpace.set(spaceId, [entry]);
@@ -5260,7 +5271,10 @@ export default function Sidebar() {
     return activity;
   }, [allStandardProjectsBase, resolveThreadStatusForSidebar, statusThreadsByProjectId]);
   const standardProjectsBase = useMemo(
-    () => allStandardProjectsBase.filter((project) => (project.spaceId ?? null) === activeSpaceId),
+    () =>
+      allStandardProjectsBase.filter(
+        (project) => !SPACES_ON || (project.spaceId ?? null) === activeSpaceId,
+      ),
     [activeSpaceId, allStandardProjectsBase],
   );
   const pinnedProjectIds = useMemo(
@@ -5691,7 +5705,7 @@ export default function Sidebar() {
 
   const showRailAutomationsPanel = isOnAutomations;
   const showRailSpacesPanel =
-    railPanelView === "spaces" && !isOnGroups && !isOnSettings && !activityViewEnabled;
+    SPACES_ON && railPanelView === "spaces" && !isOnGroups && !isOnSettings && !activityViewEnabled;
   const workspaceProjectThreadData = useMemo(
     () =>
       new Map(
@@ -7332,6 +7346,7 @@ export default function Sidebar() {
         return;
       }
       if (command === "space.previous" || command === "space.next") {
+        if (!SPACES_ON) return;
         if (!isProjectsSidebarSurface({ isOnSettings, isOnGroups })) return;
         event.preventDefault();
         event.stopPropagation();
@@ -7347,6 +7362,7 @@ export default function Sidebar() {
       }
       const spaceJumpIndex = spaceJumpIndexFromCommand(command ?? "");
       if (spaceJumpIndex !== null) {
+        if (!SPACES_ON) return;
         if (!isProjectsSidebarSurface({ isOnSettings, isOnGroups })) return;
         // Index 0 is Void, then spaces in strip order — the chord addresses what you see.
         const orderedSpaceIds: ReadonlyArray<SpaceId | null> = [
@@ -8077,6 +8093,7 @@ export default function Sidebar() {
   }
   const railShortcutItems: AppRailItem[] = railShortcuts.flatMap((shortcut): AppRailItem[] => {
     if (shortcut.kind === "space") {
+      if (!SPACES_ON) return [];
       return [
         {
           id: shortcut.key,
@@ -8106,8 +8123,9 @@ export default function Sidebar() {
         active: activeRailShortcutKey === shortcut.key,
         onSelect: () => {
           setActivityViewEnabledSmoothly(false);
-          selectRailPanelItem("spaces");
-          openRailSpacesProject(project.id);
+          selectRailPanelItem(SPACES_ON ? "spaces" : "home");
+          if (SPACES_ON) openRailSpacesProject(project.id);
+          else setProjectExpanded(project.id, true);
           if (!isOnThreadsSection) handleSidebarViewChange("threads");
         },
       },
@@ -8115,10 +8133,14 @@ export default function Sidebar() {
   });
   const railMoreMenu = (
     <AppRailMoreMenu
-      spaces={[null, ...spaces.map((space) => space.id)].map((spaceId) => ({
-        key: railSpaceShortcutKey(spaceId),
-        label: spaceDisplayName(spaceId, spaces, voidSpace, t),
-      }))}
+      spaces={
+        SPACES_ON
+          ? [null, ...spaces.map((space) => space.id)].map((spaceId) => ({
+              key: railSpaceShortcutKey(spaceId),
+              label: spaceDisplayName(spaceId, spaces, voidSpace, t),
+            }))
+          : []
+      }
       projects={allStandardProjectsBase.map((project) => ({
         key: railProjectShortcutKey(project.id),
         label: resolveSidebarProjectRowLabel(project),
@@ -8511,25 +8533,27 @@ export default function Sidebar() {
                     renderRailSpacesPanel()
                   ) : (
                     <SidebarGroup className="px-1.5 py-1.5">
-                      <SpaceSwitcher
-                        spaces={spaces}
-                        activeSpaceId={activeSpaceId}
-                        activityBySpaceId={spaceActivityById}
-                        voidSpace={voidSpace}
-                        onSelect={handleSelectSpace}
-                        onCreate={() => openSpaceCreator()}
-                        onEdit={(space) => openSpaceEditor(space.id)}
-                        onDelete={(space) => void handleDeleteSpace(space.id)}
-                        onReorder={handleReorderSpaces}
-                        onRenameSpace={(space, name) => void handleRenameSpace(space, name)}
-                        onEditVoid={openVoidEditor}
-                        onRenameVoid={handleRenameVoid}
-                        onResetVoid={resetVoidSpace}
-                        onDropProject={(projectId, spaceId) =>
-                          void handleMoveProjectToSpace(projectId, spaceId)
-                        }
-                        jumpShortcutLabelForTab={jumpShortcutLabelForSpaceTab}
-                      />
+                      {SPACES_ON && (
+                        <SpaceSwitcher
+                          spaces={spaces}
+                          activeSpaceId={activeSpaceId}
+                          activityBySpaceId={spaceActivityById}
+                          voidSpace={voidSpace}
+                          onSelect={handleSelectSpace}
+                          onCreate={() => openSpaceCreator()}
+                          onEdit={(space) => openSpaceEditor(space.id)}
+                          onDelete={(space) => void handleDeleteSpace(space.id)}
+                          onReorder={handleReorderSpaces}
+                          onRenameSpace={(space, name) => void handleRenameSpace(space, name)}
+                          onEditVoid={openVoidEditor}
+                          onRenameVoid={handleRenameVoid}
+                          onResetVoid={resetVoidSpace}
+                          onDropProject={(projectId, spaceId) =>
+                            void handleMoveProjectToSpace(projectId, spaceId)
+                          }
+                          jumpShortcutLabelForTab={jumpShortcutLabelForSpaceTab}
+                        />
+                      )}
                       {renderPinnedThreadsSection()}
                       {renderListSectionHeader(
                         t("workspace:sections_projects"),
@@ -9302,7 +9326,13 @@ export default function Sidebar() {
               setSearchPaletteMode("search");
             }
           }}
-          actions={[...searchPaletteActions, ...searchPaletteNavigationActions]}
+          actions={[
+            ...searchPaletteActions.filter(
+              (action) =>
+                SPACES_ON || (action.id !== "new-space" && !action.id.startsWith("switch-space-")),
+            ),
+            ...searchPaletteNavigationActions,
+          ]}
           projects={searchPaletteProjects}
           projectById={projectById}
           onCreateChat={() => void handleCreatePaletteChat()}
