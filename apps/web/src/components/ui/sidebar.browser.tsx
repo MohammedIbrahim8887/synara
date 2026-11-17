@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cdp, page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { SidebarPanelTitle } from "../SidebarPanelTitle";
+
 import {
   Sidebar,
   SidebarProvider,
@@ -190,6 +192,35 @@ it("keeps mobile sidebar content mounted and unfocusable while closed", async ()
     expect(document.querySelector<HTMLInputElement>('[aria-label="Sidebar draft"]')!.value).toBe(
       "Keep this draft",
     );
+  } finally {
+    await screen.unmount();
+  }
+});
+
+it("closes the mobile drawer from its panel title and adds no button on desktop", async () => {
+  await page.viewport(412, 915);
+  const tree = (
+    <SidebarProvider>
+      <Controls name="drawer" />
+      <Sidebar>
+        <SidebarPanelTitle title="Settings" />
+      </Sidebar>
+    </SidebarProvider>
+  );
+  const screen = await render(tree);
+  try {
+    await page.getByRole("button", { name: "Toggle drawer" }).click();
+    await expect.element(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await page.getByRole("button", { name: "Close sidebar" }).click();
+    await expect
+      .element(page.getByRole("heading", { name: "Settings", includeHidden: true }))
+      .not.toBeVisible();
+
+    await page.viewport(1280, 800);
+    await expect.element(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    expect(
+      page.getByRole("button", { name: "Close sidebar", includeHidden: true }).all(),
+    ).toHaveLength(0);
   } finally {
     await screen.unmount();
   }

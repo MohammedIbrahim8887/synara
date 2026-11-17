@@ -92,6 +92,13 @@ type SidebarInstanceContextProps = {
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 const SidebarInstanceContext = React.createContext<SidebarInstanceContextProps | null>(null);
 
+/** True for content rendered inside the mobile drawer (the Sheet), never on desktop. */
+const SidebarMobileDrawerContext = React.createContext(false);
+
+function useIsInMobileSidebarDrawer(): boolean {
+  return React.useContext(SidebarMobileDrawerContext);
+}
+
 function useSidebar() {
   const context = React.useContext(SidebarContext);
   if (!context) {
@@ -314,7 +321,9 @@ function Sidebar({
               <SheetTitle>{t("workspace:sidebar")}</SheetTitle>
               <SheetDescription>{t("workspace:displaysTheMobileSidebar")}</SheetDescription>
             </SheetHeader>
-            <div className={cn("flex h-full w-full flex-col", innerClassName)}>{children}</div>
+            <SidebarMobileDrawerContext.Provider value>
+              <div className={cn("flex h-full w-full flex-col", innerClassName)}>{children}</div>
+            </SidebarMobileDrawerContext.Provider>
           </SheetPopup>
         </Sheet>
       </SidebarInstanceContext.Provider>
@@ -1166,6 +1175,7 @@ export {
   SIDEBAR_OFFCANVAS_MOTION_CLASS,
   SIDEBAR_OFFCANVAS_MOTION_SUPPRESSED_CLASS,
   useSidebar,
+  useIsInMobileSidebarDrawer,
 };
 
 export type { SidebarResizableOptions };

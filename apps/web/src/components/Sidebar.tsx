@@ -329,7 +329,11 @@ import {
 import { SidebarLeadingIcon } from "./SidebarLeadingIcon";
 import { SidebarPrimaryAction } from "./SidebarPrimaryAction";
 import { RailAutomationsPanel } from "./RailAutomationsPanel";
-import { SIDEBAR_PANEL_TITLE_CLASS_NAME, SidebarPanelTitle } from "./SidebarPanelTitle";
+import {
+  SIDEBAR_PANEL_TITLE_CLASS_NAME,
+  SidebarMobileCloseButton,
+  SidebarPanelTitle,
+} from "./SidebarPanelTitle";
 import { SidebarMetaChipStack } from "./SidebarMetaChip";
 import { SidebarRowHoverActions } from "./SidebarRowHoverActions";
 import { SidebarSectionToolbar } from "./SidebarSectionToolbar";
@@ -8440,6 +8444,7 @@ export default function Sidebar() {
                       />
                     ) : null}
                     {betaBadge}
+                    <SidebarMobileCloseButton />
                   </div>
                 </div>
                 {/* The keyed content remounts with a short enter animation while the picker

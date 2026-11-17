@@ -262,6 +262,7 @@
   "editor_switchProject": "Switch project",
   "threadActions": "Thread actions",
   "toggleSidebar": "Toggle Sidebar",
+  "closeSidebar": "Close sidebar",
   "searchPalette_usageSettings": "Usage settings",
   "projectPicker_addNewProject": "Add new project",
   "alreadyPresent": "Already present",
