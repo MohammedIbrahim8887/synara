@@ -353,11 +353,11 @@ refresh keeps the last successful catalog. The shared discovery cache refreshes 
 background after its thirty-minute fresh window. Opening a provider/account tab in the composer
 checks that catalog on demand and delivers any refreshed list directly to the picker. Other tabs
 are not refreshed just because the picker opens, and there is no periodic timer for these checks.
-Existing models remain visible while checks run silently, without a persistent refresh row.
-If a check fails, an inline error offers **Retry**; a successful retry removes the entire row,
-including when the catalog has not changed. The server shares concurrent requests, reuses successful
-manual retries for at least one minute, and backs off failures. Checks for the viewed account take
-priority over queued background catalog loads.
+After configuring models in a provider CLI, open the matching account tab and click **Refresh models**.
+The first manual refresh reruns discovery for the current project even after a recent automatic check.
+Existing models remain visible during discovery. If a check fails, the picker offers **Retry**.
+The server shares concurrent scans, reuses successful manual scans for one minute, and backs off
+repeated failures. Checks for the viewed account take priority over queued background catalog loads.
 Failed refreshes retain the last successful catalog. Refreshing does not change the
 selected model or restart running sessions, and availability still comes from the provider runtime.
 Partial or fallback catalogs are retried on demand after a thirty-second cooldown and are never
@@ -378,10 +378,6 @@ Presets of a non-default account show the account name; presets of a removed or 
 are hidden. Model cycling prefers the active account's stars. A task that has started stays on its provider: only
 that provider's tab and starred entries are offered. Supported provider executables can be pointed
 at custom binary locations.
-
-After configuring models in the provider CLI, open the composer model picker, select the
-matching provider account, and click **Refresh models**. The picker rechecks discovery for
-the current project. Repeated manual scans within a minute reuse the latest successful scan.
 
 Starred models absent from the current catalog remain saved and can be removed, but cannot be
 selected. They become selectable again when discovery or custom model settings add them to the
