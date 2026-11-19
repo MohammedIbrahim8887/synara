@@ -11,15 +11,19 @@ import {
   Text,
   View,
 } from "react-native";
-import { ConfirmationDialog, type Confirmation } from "./components/ConfirmationDialog";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as SecureStore from "expo-secure-store";
+import * as Haptics from "expo-haptics";
+import Animated, { useReducedMotion } from "react-native-reanimated";
 import { requireNativeModule, requireNativeViewManager } from "expo-modules-core";
 import {
   isLocalConnectionEndpoint,
   parseLocalDeviceInvitation,
 } from "@synara/contracts/localConnections";
+import { ConfirmationDialog, type Confirmation } from "./components/ConfirmationDialog";
+import { PressableScale } from "./components/PressableScale";
+import { revealExit, rise, screenEnter, screenExit } from "./components/motion";
 
 type Connection = { endpoint: string; certificateFingerprint: string; credential?: string };
 const NativeConnection = requireNativeViewManager<{
@@ -54,6 +58,7 @@ function Companion() {
   const [attempt, setAttempt] = useState(0);
   const [backRequest, setBackRequest] = useState(0);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const reduceMotion = useReducedMotion();
   useEffect(() => {
     void (async () => {
       const stored = await SecureStore.getItemAsync(STORAGE_KEY);
@@ -108,6 +113,7 @@ function Companion() {
     if (!scanningRef.current) return;
     scanningRef.current = false;
     setScanning(false);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       // Validate the server-issued 12-character invitation before opening any network connection.
       const data = parseLocalDeviceInvitation(raw);
@@ -134,6 +140,7 @@ function Companion() {
         },
       });
     } catch {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setMessage(
         "This code is invalid or expired. Create a new code in Sona → Settings → Connections.",
       );
@@ -169,123 +176,166 @@ function Companion() {
         );
       },
     });
-  if (scanning)
-    return (
-      <SafeAreaView style={styles.screen}>
-        <CameraView
-          style={styles.content}
-          barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-          onBarcodeScanned={({ data }) => scan(data)}
-        />
-        <Pressable
-          accessibilityRole="button"
-          style={styles.button}
-          onPress={() => {
-            scanningRef.current = false;
-            setScanning(false);
-          }}
-        >
-          <Text style={styles.buttonText}>Cancel scanning</Text>
-        </Pressable>
-      </SafeAreaView>
-    );
+  const cancelScan = () => {
+    scanningRef.current = false;
+    setScanning(false);
+  };
   return (
     <SafeAreaView style={styles.screen}>
       <ConfirmationDialog confirmation={confirmation} onClose={() => setConfirmation(null)} />
-      <View style={styles.header}>
-        <View style={styles.brand}>
-          <Image source={require("./assets/icon.png")} style={styles.logo} />
-          <Text style={styles.title}>Sona</Text>
-        </View>
-        {connection && (
-          <Pressable accessibilityRole="button" onPress={disconnect}>
-            <Text style={styles.link}>Disconnect</Text>
-          </Pressable>
-        )}
-      </View>
-      {connection ? (
-        <>
-          <NativeConnection
-            key={attempt}
+      {scanning ? (
+        <Animated.View
+          key="scan"
+          entering={screenEnter}
+          exiting={screenExit}
+          style={styles.content}
+        >
+          <CameraView
             style={styles.content}
-            connection={connection}
-            backRequest={backRequest}
-            onBackBoundary={() => BackHandler.exitApp()}
-            onExternalLink={({ nativeEvent }) => {
-              if (/^https?:\/\//.test(nativeEvent.url))
-                void Linking.openURL(nativeEvent.url).catch(() =>
-                  setMessage("No browser could open this link."),
-                );
-            }}
-            onState={({ nativeEvent }) => {
-              setStatus(nativeEvent.state);
-              setMessage(nativeEvent.message ?? "");
-              if (nativeEvent.state === "ready") {
-                const { endpoint, certificateFingerprint } = connection;
-                void SecureStore.setItemAsync(
-                  STORAGE_KEY,
-                  JSON.stringify({ endpoint, certificateFingerprint }),
-                ).catch(() =>
-                  setMessage(
-                    "Connected, but the connection could not be saved. You may need to scan again after closing Sona.",
-                  ),
-                );
-                if (connection.credential) setConnection({ endpoint, certificateFingerprint });
-              }
-            }}
+            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+            onBarcodeScanned={({ data }) => scan(data)}
           />
-          {status === "loading" && (
-            <View style={styles.notice}>
-              <ActivityIndicator color="#fff" />
-              <Text style={styles.copy}>Connecting to your computer…</Text>
-            </View>
-          )}
-          {status === "error" && (
-            <View style={styles.notice}>
-              <Text accessibilityRole="alert" style={styles.copy}>
-                {message}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                style={styles.button}
-                onPress={() => {
-                  setAttempt((value) => value + 1);
-                  setStatus("loading");
-                }}
-              >
-                <Text style={styles.buttonText}>Retry</Text>
-              </Pressable>
-              <Pressable accessibilityRole="button" onPress={() => void startScan()}>
-                <Text style={styles.link}>Scan a new code</Text>
-              </Pressable>
-            </View>
-          )}
-          {message && status !== "error" && (
-            <Text accessibilityRole="alert" style={[styles.copy, styles.notice]}>
-              {message}
-            </Text>
-          )}
-        </>
+          <View style={styles.footer}>
+            <PressableScale accessibilityRole="button" style={styles.button} onPress={cancelScan}>
+              <Text style={styles.buttonText}>Cancel scanning</Text>
+            </PressableScale>
+          </View>
+        </Animated.View>
       ) : (
-        <View style={styles.welcome}>
-          <Text style={styles.heading}>Your workspace, on your phone.</Text>
-          <Text style={styles.copy}>
-            Open Sona on your computer, then Settings → Connections. Enable local connections and
-            scan its pairing code. Keep both devices on the same Wi-Fi.
-          </Text>
-          {message ? (
-            <Text accessibilityRole="alert" style={styles.copy}>
-              {message}
-            </Text>
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            style={styles.button}
-            onPress={() => void startScan()}
-          >
-            <Text style={styles.buttonText}>Scan pairing code</Text>
-          </Pressable>
-        </View>
+        <Animated.View
+          key="main"
+          entering={screenEnter}
+          exiting={screenExit}
+          style={styles.content}
+        >
+          <View style={styles.header}>
+            <View style={styles.brand}>
+              <Image source={require("./assets/icon.png")} style={styles.logo} />
+              <Text style={styles.title}>Sona</Text>
+            </View>
+            {connection && (
+              <Animated.View entering={screenEnter} exiting={screenExit}>
+                <PressableScale accessibilityRole="button" hitSlop={8} onPress={disconnect}>
+                  <Text style={styles.link}>Disconnect</Text>
+                </PressableScale>
+              </Animated.View>
+            )}
+          </View>
+          {connection ? (
+            <View style={styles.content}>
+              <NativeConnection
+                key={attempt}
+                style={styles.content}
+                connection={connection}
+                backRequest={backRequest}
+                onBackBoundary={() => BackHandler.exitApp()}
+                onExternalLink={({ nativeEvent }) => {
+                  if (/^https?:\/\//.test(nativeEvent.url))
+                    void Linking.openURL(nativeEvent.url).catch(() =>
+                      setMessage("No browser could open this link."),
+                    );
+                }}
+                onState={({ nativeEvent }) => {
+                  setStatus(nativeEvent.state);
+                  setMessage(nativeEvent.message ?? "");
+                  if (nativeEvent.state === "ready") {
+                    const { endpoint, certificateFingerprint } = connection;
+                    void SecureStore.setItemAsync(
+                      STORAGE_KEY,
+                      JSON.stringify({ endpoint, certificateFingerprint }),
+                    ).catch(() =>
+                      setMessage(
+                        "Connected, but the connection could not be saved. You may need to scan again after closing Sona.",
+                      ),
+                    );
+                    if (connection.credential) {
+                      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      setConnection({ endpoint, certificateFingerprint });
+                    }
+                  }
+                }}
+              />
+              {/* Overlays sit above the WebView instead of beside it, so status changes
+                  never resize it and never force the workspace to reflow. */}
+              {status === "loading" && (
+                <Animated.View exiting={revealExit} style={styles.overlay}>
+                  <ActivityIndicator color="#fff" />
+                  <Text style={styles.copy}>Connecting to your computer…</Text>
+                </Animated.View>
+              )}
+              {status === "error" && (
+                <Animated.View entering={screenEnter} exiting={screenExit} style={styles.overlay}>
+                  <Animated.Text
+                    entering={rise(0, reduceMotion)}
+                    accessibilityRole="alert"
+                    style={[styles.copy, styles.centered]}
+                  >
+                    {message}
+                  </Animated.Text>
+                  <Animated.View entering={rise(1, reduceMotion)} style={styles.actions}>
+                    <PressableScale
+                      accessibilityRole="button"
+                      style={styles.button}
+                      onPress={() => {
+                        setAttempt((value) => value + 1);
+                        setStatus("loading");
+                      }}
+                    >
+                      <Text style={styles.buttonText}>Retry</Text>
+                    </PressableScale>
+                    <PressableScale accessibilityRole="button" onPress={() => void startScan()}>
+                      <Text style={[styles.link, styles.centered]}>Scan a new code</Text>
+                    </PressableScale>
+                  </Animated.View>
+                </Animated.View>
+              )}
+              {message !== "" && status !== "error" && (
+                <Animated.View
+                  entering={rise(0, reduceMotion, 8)}
+                  exiting={screenExit}
+                  style={styles.toast}
+                >
+                  <Pressable
+                    accessibilityRole="alert"
+                    accessibilityHint="Tap to dismiss"
+                    onPress={() => setMessage("")}
+                  >
+                    <Text style={styles.toastText}>{message}</Text>
+                  </Pressable>
+                </Animated.View>
+              )}
+            </View>
+          ) : (
+            <View style={styles.welcome}>
+              <Animated.Text entering={rise(0, reduceMotion)} style={styles.heading}>
+                Your workspace, on your phone.
+              </Animated.Text>
+              <Animated.Text entering={rise(1, reduceMotion)} style={styles.copy}>
+                Open Sona on your computer, then Settings → Connections. Enable local connections
+                and scan its pairing code. Keep both devices on the same Wi-Fi.
+              </Animated.Text>
+              {message ? (
+                <Animated.Text
+                  entering={rise(0, reduceMotion, 8)}
+                  exiting={screenExit}
+                  accessibilityRole="alert"
+                  style={styles.copy}
+                >
+                  {message}
+                </Animated.Text>
+              ) : null}
+              <Animated.View entering={rise(2, reduceMotion)}>
+                <PressableScale
+                  accessibilityRole="button"
+                  style={styles.button}
+                  onPress={() => void startScan()}
+                >
+                  <Text style={styles.buttonText}>Scan pairing code</Text>
+                </PressableScale>
+              </Animated.View>
+            </View>
+          )}
+        </Animated.View>
       )}
     </SafeAreaView>
   );
@@ -322,5 +372,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: { fontSize: 16, fontWeight: "600", color: "#111" },
-  notice: { padding: 20, gap: 12 },
+  centered: { textAlign: "center" },
+  footer: { padding: 16 },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "#111111",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 28,
+    gap: 16,
+  },
+  actions: { alignSelf: "stretch", gap: 4 },
+  toast: {
+    position: "absolute",
+    top: 8,
+    left: 12,
+    right: 12,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#222222",
+    borderColor: "#333333",
+    borderWidth: 1,
+  },
+  toastText: { fontSize: 15, lineHeight: 22, color: "#eeeeee" },
 });

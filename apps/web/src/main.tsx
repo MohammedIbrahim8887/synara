@@ -15,6 +15,7 @@ import { readDesktopWindowTranslucency } from "./lib/desktopWindowTranslucency";
 import { installGlassOverlayCutout } from "./lib/glassOverlayCutout";
 import { trackProductNavigation } from "./lib/productAnalytics";
 import { installRendererErrorDiagnostics } from "./lib/rendererErrorDiagnostics";
+import { isAndroidAppUserAgent } from "./lib/androidApp";
 const disposeRendererDiagnostics = installRendererErrorDiagnostics();
 if (import.meta.hot) import.meta.hot.dispose(() => disposeRendererDiagnostics?.());
 
@@ -30,6 +31,9 @@ const rootElement = document.getElementById("root") as HTMLElement;
 
 document.title = APP_DISPLAY_NAME;
 if (readWorkspaceFrame()) document.documentElement.dataset.workspaceFrame = "true";
+// Android WebView composites every backdrop-filter layer on each frame; the app turns blur off.
+if (isAndroidAppUserAgent(navigator.userAgent))
+  document.documentElement.dataset.androidApp = "true";
 
 if (isDesktopPresentation) {
   document.documentElement.dataset.runtime = "electron";

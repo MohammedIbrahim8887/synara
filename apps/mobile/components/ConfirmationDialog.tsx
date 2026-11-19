@@ -1,4 +1,15 @@
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
+import * as Haptics from "expo-haptics";
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
+import { DURATION, EASE_OUT } from "./motion";
+import { PressableScale } from "./PressableScale";
 
 export type Confirmation = {
   title: string;
@@ -8,7 +19,11 @@ export type Confirmation = {
   onConfirm: () => void;
 };
 
-/** Shared app confirmation surface; Android Back dismisses without taking action. */
+/**
+ * Shared app confirmation surface; Android Back dismisses without taking action.
+ * The card fades and settles in from 0.96, and plays its exit before the Modal unmounts.
+ * Reopening mid-exit interrupts the exit from its current value instead of restarting.
+ */
 export function ConfirmationDialog({
   confirmation,
   onClose,
@@ -16,48 +31,75 @@ export function ConfirmationDialog({
   confirmation: Confirmation | null;
   onClose: () => void;
 }) {
+  const reduceMotion = useReducedMotion();
+  // Keeps the last content on screen while the exit animation runs.
+  const [shown, setShown] = useState<Confirmation | null>(confirmation);
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    if (confirmation) {
+      setShown(confirmation);
+      progress.set(withTiming(1, { duration: DURATION.enter, easing: EASE_OUT }));
+      return;
+    }
+    progress.set(
+      withTiming(0, { duration: DURATION.exit, easing: EASE_OUT }, (finished) => {
+        if (finished) scheduleOnRN(setShown, null);
+      }),
+    );
+  }, [confirmation, progress]);
+
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: progress.get() }));
+  const cardStyle = useAnimatedStyle(() => {
+    const p = progress.get();
+    return {
+      opacity: p,
+      transform: reduceMotion ? [] : [{ translateY: (1 - p) * 8 }, { scale: 0.96 + 0.04 * p }],
+    };
+  });
+
+  const closing = confirmation === null;
   return (
     <Modal
-      visible={confirmation !== null}
+      visible={shown !== null}
       transparent
       animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={styles.overlay}>
-        <View style={styles.card} accessibilityViewIsModal>
+      <View style={styles.overlay} pointerEvents={closing ? "none" : "auto"}>
+        <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} />
+        <Animated.View style={[styles.card, cardStyle]} accessibilityViewIsModal>
           <ScrollView bounces={false} contentContainerStyle={styles.content}>
             <Text accessibilityRole="header" style={styles.title}>
-              {confirmation?.title}
+              {shown?.title}
             </Text>
-            <Text style={styles.message}>{confirmation?.message}</Text>
+            <Text style={styles.message}>{shown?.message}</Text>
             <View style={styles.actions}>
-              <Pressable
+              <PressableScale
                 accessibilityRole="button"
                 onPress={onClose}
-                style={({ pressed }) => [styles.button, styles.cancel, pressed && styles.pressed]}
+                style={[styles.button, styles.cancel]}
               >
                 <Text style={styles.cancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
+              </PressableScale>
+              <PressableScale
                 accessibilityRole="button"
                 onPress={() => {
-                  const action = confirmation?.onConfirm;
+                  const current = confirmation;
+                  if (!current) return;
+                  if (current.destructive)
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   onClose();
-                  action?.();
+                  current.onConfirm();
                 }}
-                style={({ pressed }) => [
-                  styles.button,
-                  styles.confirm,
-                  confirmation?.destructive && styles.destructive,
-                  pressed && styles.pressed,
-                ]}
+                style={[styles.button, styles.confirm, shown?.destructive && styles.destructive]}
               >
-                <Text style={styles.confirmText}>{confirmation?.action}</Text>
-              </Pressable>
+                <Text style={styles.confirmText}>{shown?.action}</Text>
+              </PressableScale>
             </View>
           </ScrollView>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -69,8 +111,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
-    backgroundColor: "rgba(0,0,0,0.65)",
   },
+  backdrop: { backgroundColor: "rgba(0,0,0,0.65)" },
   card: {
     width: "100%",
     maxWidth: 440,
@@ -100,5 +142,4 @@ const styles = StyleSheet.create({
   destructive: { backgroundColor: "#fa8054" },
   cancelText: { color: "#eee", fontSize: 16, fontWeight: "500" },
   confirmText: { color: "#111", fontSize: 16, fontWeight: "600" },
-  pressed: { opacity: 0.7 },
 });

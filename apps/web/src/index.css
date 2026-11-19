@@ -3274,6 +3274,16 @@ diffs-container {
   background: transparent;
 }
 
+/* Android app (see lib/androidApp.ts): WebView re-samples and blurs the page under every
+   backdrop-filter layer on each frame, which stalls scrolling and drawer slides on phones.
+   Blurred surfaces there keep their translucent fill without the blur. */
+:root[data-android-app="true"] *,
+:root[data-android-app="true"] *::before,
+:root[data-android-app="true"] *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 /* Panel collapsed: the route body is the whole block, so its left corners round too. They
    wait for the panel to slide most of the way out, so no notch opens beside it meanwhile;
    opening squares them at once. */

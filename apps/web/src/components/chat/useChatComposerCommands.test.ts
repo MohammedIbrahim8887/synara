@@ -32,7 +32,9 @@ function tab(overrides: Partial<KeyboardEvent> = {}): KeyboardEvent {
 
 const ref = <T>(current: T) => ({ current });
 
-function setup(options: { menuOpen?: boolean; editorValue?: string; focused?: boolean } = {}) {
+function setup(
+  options: { menuOpen?: boolean; editorValue?: string; focused?: boolean; isMobile?: boolean } = {},
+) {
   let entry: ComposerPredictionEntry = { status: "ready", suggestion: SUGGESTION };
   const editorValue = options.editorValue ?? "";
   const editor = {
@@ -64,6 +66,7 @@ function setup(options: { menuOpen?: boolean; editorValue?: string; focused?: bo
   reactHookHarness.beginRender();
   const commands = useChatComposerCommands({
     threadId: ThreadId.makeUnsafe("thread-1"),
+    isMobile: options.isMobile ?? false,
     composerSelectLockRef: ref(false),
     setComposerCommandPicker: vi.fn(),
     setComposerHighlightedItemId: vi.fn(),
@@ -204,5 +207,36 @@ describe("useChatComposerCommands Tab on a composer prediction", () => {
 
     expect(harness.composerPrediction.accept).not.toHaveBeenCalled();
     expect(harness.onSend).toHaveBeenCalled();
+  });
+});
+
+describe("composer Enter on mobile", () => {
+  beforeEach(() => reactHookHarness.reset());
+
+  it.each(["A message", "/automation daily-summary"])(
+    "leaves Enter to insert a newline for %s",
+    (editorValue) => {
+      const { commands, onSend } = setup({ isMobile: true, editorValue });
+      expect(commands.onComposerCommandKey("Enter", tab({ key: "Enter", keyCode: 13 }))).toBe(
+        false,
+      );
+      expect(onSend).not.toHaveBeenCalled();
+    },
+  );
+
+  it("leaves Enter to insert a newline while the mobile menu is open", () => {
+    const { commands, onSend, handleForkTargetSelection } = setup({
+      isMobile: true,
+      menuOpen: true,
+    });
+    expect(commands.onComposerCommandKey("Enter", tab({ key: "Enter", keyCode: 13 }))).toBe(false);
+    expect(onSend).not.toHaveBeenCalled();
+    expect(handleForkTargetSelection).not.toHaveBeenCalled();
+  });
+
+  it("preserves desktop Enter to send", () => {
+    const { commands, onSend } = setup({ editorValue: "A message" });
+    expect(commands.onComposerCommandKey("Enter", tab({ key: "Enter", keyCode: 13 }))).toBe(true);
+    expect(onSend).toHaveBeenCalledOnce();
   });
 });

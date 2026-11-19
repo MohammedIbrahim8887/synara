@@ -1,5 +1,6 @@
 package dev.sona.connection
 
+import android.Manifest
 import android.content.Context
 import android.app.Activity
 import android.content.Intent
@@ -65,6 +66,21 @@ class SonaConnectionView(context: Context, appContext: AppContext) : ExpoView(co
   private var pageFailed = false
   private val browser = WebView(context)
   private val sessionHandler = Handler(Looper.getMainLooper())
+  private val microphonePermissions = MicrophonePermissionGate(
+    currentOrigin = {
+      origin.takeIf {
+        !closed && !pageFailed && sameOrigin(browser.url ?: "") &&
+          Uri.parse(browser.url).path != "/pair" && Uri.parse(browser.url).path != "/auth/signed-out"
+      }
+    },
+    requestPermission = { complete ->
+      val permissions = appContext.permissions
+      if (permissions == null) complete(false)
+      else permissions.askForPermissions({
+        sessionHandler.post { complete(permissions.hasGrantedPermissions(Manifest.permission.RECORD_AUDIO)) }
+      }, Manifest.permission.RECORD_AUDIO)
+    },
+  )
   private val sessionCheck = object : Runnable {
     override fun run() {
       if (closed || pageFailed || !sameOrigin(browser.url ?: "") || Uri.parse(browser.url).path == "/pair") return
@@ -88,7 +104,29 @@ class SonaConnectionView(context: Context, appContext: AppContext) : ExpoView(co
     browser.settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
     CookieManager.getInstance().setAcceptThirdPartyCookies(browser, false)
     browser.settings.setSupportMultipleWindows(false)
+    // Paint the app's dark surface instead of white before the workspace's first frame.
+    browser.setBackgroundColor(android.graphics.Color.parseColor("#111111"))
+    // This WebView is the whole app and stays on screen, so keep its tiles rasterized:
+    // scrolling and drawer slides no longer wait on tile raster at the edges.
+    browser.settings.offscreenPreRaster = true
+    // Lets the web workspace drop effects that are costly in WebView (see apps/web/src/lib/androidApp.ts).
+    browser.settings.userAgentString = "${browser.settings.userAgentString} SonaAndroid/0.1.0"
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+      browser.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
+    }
     browser.webChromeClient = object : WebChromeClient() {
+      override fun onPermissionRequest(request: PermissionRequest) {
+        microphonePermissions.request(
+          id = request,
+          origin = request.origin.toString(),
+          audioOnly = request.resources.isNotEmpty() && request.resources.all { it == PermissionRequest.RESOURCE_AUDIO_CAPTURE },
+          grant = { request.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) },
+          deny = { request.deny() },
+        )
+      }
+      override fun onPermissionRequestCanceled(request: PermissionRequest) {
+        microphonePermissions.cancel(request)
+      }
       override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
         if (!sameOrigin(view.url ?: "")) return false
         FileSelection.callback?.onReceiveValue(null)
@@ -108,7 +146,7 @@ class SonaConnectionView(context: Context, appContext: AppContext) : ExpoView(co
       }
     }
     browser.webViewClient = object : WebViewClient() {
-      override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) { pageFailed = false; sessionHandler.removeCallbacks(sessionCheck) }
+      override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) { microphonePermissions.cancelAll(); pageFailed = false; sessionHandler.removeCallbacks(sessionCheck) }
       override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
         if (request.isForMainFrame) {
           pageFailed = true
@@ -163,6 +201,7 @@ class SonaConnectionView(context: Context, appContext: AppContext) : ExpoView(co
     if (endpoint == origin && fingerprint == pin && credential.isEmpty() && currentConnection.isNotEmpty()) return
     val key = "$endpoint|$fingerprint|$credential"
     if (key == currentConnection) return
+    microphonePermissions.cancelAll()
     currentConnection = key; origin = endpoint; pin = fingerprint
     browser.stopLoading()
     browser.clearSslPreferences()
@@ -178,6 +217,7 @@ class SonaConnectionView(context: Context, appContext: AppContext) : ExpoView(co
   fun close() {
     if (closed) return
     closed = true
+    microphonePermissions.cancelAll()
     sessionHandler.removeCallbacks(sessionCheck)
     FileSelection.callback?.onReceiveValue(null)
     FileSelection.callback = null

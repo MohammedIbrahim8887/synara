@@ -35,6 +35,7 @@ import { useComposerReferences } from "./useComposerReferences";
 import type { ComposerModelSelectionOptions } from "./ComposerModelPicker";
 
 interface ChatComposerCommandsInput {
+  isMobile: boolean;
   threadId: ThreadId;
   composerSelectLockRef: RefObject<boolean>;
   setComposerCommandPicker: Dispatch<SetStateAction<"fork-target" | "review-target" | null>>;
@@ -131,6 +132,7 @@ interface ChatComposerCommandsInput {
 }
 
 export function useChatComposerCommands({
+  isMobile,
   threadId,
   composerSelectLockRef,
   setComposerCommandPicker,
@@ -464,6 +466,9 @@ export function useChatComposerCommands({
       return false;
     }
 
+    // Let Lexical insert a line break on phones, including while a command menu
+    // is open. Sending remains an explicit tap on the send control.
+    if (key === "Enter" && isMobile) return false;
     if (key === "Tab" && event.shiftKey) return false;
 
     const { snapshot, trigger } = resolveActiveComposerTrigger();

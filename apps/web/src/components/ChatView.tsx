@@ -5420,6 +5420,7 @@ export default function ChatView({
     onPromptChange,
     onComposerCommandKey,
   } = useChatComposerCommands({
+    isMobile: isMobileViewport,
     threadId,
     composerSelectLockRef,
     setComposerCommandPicker,
