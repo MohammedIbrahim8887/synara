@@ -3,7 +3,11 @@ import { BrowserWindow, Screen, Utils } from "electrobun/main";
 import { islandFrame, raiseIntoNotch, type IslandMode } from "./notchWindow";
 
 /** Capability-authenticated loopback channel keeps the renderer's RPC sandbox enabled. */
-export function createDesktopCompanion(origin: string, appUrl: string) {
+export function createDesktopCompanion(
+  origin: string,
+  appUrl: string,
+  options: { browserPane?: () => Promise<{ url: string; token: string } | null> } = {},
+) {
   const token = crypto.randomUUID();
   let stopped = false;
   const timers = new Map<number, ReturnType<typeof setInterval>>();
@@ -84,6 +88,7 @@ export function createDesktopCompanion(origin: string, appUrl: string) {
       ready,
       notify: Utils.showNotification,
       island: setIsland,
+      ...(options.browserPane ? { browserPane: options.browserPane } : {}),
     }),
   });
   function preload(islandView: Exclude<IslandMode, "hidden"> | false, viewId: number) {
@@ -92,7 +97,11 @@ export function createDesktopCompanion(origin: string, appUrl: string) {
         const response = await fetch(${JSON.stringify(`http://127.0.0.1:${server.port}`)} + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: ${JSON.stringify(`Bearer ${token}`)} }, body: JSON.stringify(body) });
         if (!response.ok) throw new Error('Sona desktop action failed');
       };
-      Object.defineProperty(window, 'sonaDesktop', { value: Object.freeze({ island: ${JSON.stringify(islandView)}, notify: value => request('/notify', value), setIsland: mode => request('/island', { mode, viewId: ${viewId} }) }) });
+      const browserPane = async () => {
+        const response = await fetch(${JSON.stringify(`http://127.0.0.1:${server.port}`)} + '/browser-pane', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: ${JSON.stringify(`Bearer ${token}`)} }, body: '{}' });
+        return response.ok ? response.json() : null;
+      };
+      Object.defineProperty(window, 'sonaDesktop', { value: Object.freeze({ island: ${JSON.stringify(islandView)}, notify: value => request('/notify', value), setIsland: mode => request('/island', { mode, viewId: ${viewId} })${options.browserPane && !islandView ? ", browserPane" : ""} }) });
       window.dispatchEvent(new Event("sona-desktop-ready"));
       void request("/ready", { viewId: ${viewId} }).catch(() => {});
     }`;

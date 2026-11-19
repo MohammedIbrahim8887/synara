@@ -87,6 +87,7 @@ import {
 import { emitWsCompatibilityIssue, emitWsTransportState } from "./wsTransportEvents";
 import { fetchExecutionResource } from "./lib/wsHttpUrl";
 import type { HostsApi } from "./lib/hosts/api";
+import { readSonaBrowserBridge } from "./sonaBrowserPane";
 
 export type { WsThreadStreamFailure } from "./wsTransport";
 
@@ -197,6 +198,8 @@ const orchestrationThreadEventListeners = createListenerRegistry<OrchestrationTh
 const shellStreamFailureListeners = createListenerRegistry<WsShellStreamFailure>();
 const threadStreamFailureListeners = createListenerRegistry<WsThreadStreamFailure>();
 const fallbackBrowserStateListeners = createListenerRegistry<ThreadBrowserState>();
+/** Synara's Electron browser, else Sona's streamed browser, else the in-page fallback. */
+const readDesktopBrowser = () => window.desktopBridge?.browser ?? readSonaBrowserBridge();
 const fallbackBrowserStates = new Map<ThreadId, ThreadBrowserState>();
 
 function clearWsNativeApiListeners(): void {
@@ -1158,8 +1161,9 @@ export function createWsNativeApi(): NativeApi {
         : {}),
       open: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.open(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.open(input);
         }
         const state = ensureFallbackBrowserWorkspace(input.threadId);
         if (input.initialUrl && state.tabs.length > 0) {
@@ -1173,8 +1177,9 @@ export function createWsNativeApi(): NativeApi {
       },
       close: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.close(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.close(input);
         }
         const state = getFallbackBrowserState(input.threadId);
         state.open = false;
@@ -1186,66 +1191,75 @@ export function createWsNativeApi(): NativeApi {
       },
       hide: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          await window.desktopBridge.browser.hide(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          await desktopBrowser.hide(input);
         }
       },
       getState: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.getState(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.getState(input);
         }
         return cloneBrowserState(getFallbackBrowserState(input.threadId));
       },
       setPanelBounds: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          await window.desktopBridge.browser.setPanelBounds(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          await desktopBrowser.setPanelBounds(input);
           return;
         }
       },
       attachWebview: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.attachWebview(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.attachWebview(input);
         }
         return cloneBrowserState(getFallbackBrowserState(input.threadId));
       },
       detachWebview: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          await window.desktopBridge.browser.detachWebview(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          await desktopBrowser.detachWebview(input);
         }
       },
       copyLink: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          await window.desktopBridge.browser.copyLink(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          await desktopBrowser.copyLink(input);
           return;
         }
         throw new Error("Copying the browser link requires the desktop app.");
       },
       copyScreenshotToClipboard: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          await window.desktopBridge.browser.copyScreenshotToClipboard(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          await desktopBrowser.copyScreenshotToClipboard(input);
           return;
         }
         throw new Error("Browser screenshots require the desktop app.");
       },
       captureScreenshot: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.captureScreenshot(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.captureScreenshot(input);
         }
         throw new Error("Browser screenshots require the desktop app.");
       },
       capturePreview: async (input) =>
-        remoteExecution ? null : (window.desktopBridge?.browser.capturePreview(input) ?? null),
+        remoteExecution ? null : (readDesktopBrowser()?.capturePreview(input) ?? null),
       navigate: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.navigate(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.navigate(input);
         }
         const state = ensureFallbackBrowserWorkspace(input.threadId);
         const tab = resolveFallbackBrowserTab(state, input.tabId);
@@ -1260,29 +1274,33 @@ export function createWsNativeApi(): NativeApi {
       },
       reload: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.reload(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.reload(input);
         }
         return cloneBrowserState(getFallbackBrowserState(input.threadId));
       },
       goBack: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.goBack(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.goBack(input);
         }
         return cloneBrowserState(getFallbackBrowserState(input.threadId));
       },
       goForward: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.goForward(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.goForward(input);
         }
         return cloneBrowserState(getFallbackBrowserState(input.threadId));
       },
       newTab: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.newTab(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.newTab(input);
         }
         const state = ensureFallbackBrowserWorkspace(input.threadId);
         const tab = createFallbackTab(input.url);
@@ -1295,8 +1313,9 @@ export function createWsNativeApi(): NativeApi {
       },
       closeTab: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.closeTab(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.closeTab(input);
         }
         const state = ensureFallbackBrowserWorkspace(input.threadId);
         const nextTabs = state.tabs.filter((tab) => tab.id !== input.tabId);
@@ -1317,8 +1336,9 @@ export function createWsNativeApi(): NativeApi {
       },
       selectTab: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.selectTab(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.selectTab(input);
         }
         const state = ensureFallbackBrowserWorkspace(input.threadId);
         const tab = resolveFallbackBrowserTab(state, input.tabId);
@@ -1328,53 +1348,60 @@ export function createWsNativeApi(): NativeApi {
       },
       openDevTools: async (input) => {
         if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-        if (window.desktopBridge) {
-          await window.desktopBridge.browser.openDevTools(input);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          await desktopBrowser.openDevTools(input);
         }
       },
       annotations: {
         start: async (input) => {
           if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-          if (window.desktopBridge) {
-            return window.desktopBridge.browser.annotations.start(input);
+          const desktopBrowser = readDesktopBrowser();
+          if (desktopBrowser) {
+            return desktopBrowser.annotations.start(input);
           }
           throw new Error("Browser annotations require the desktop app.");
         },
         cancel: async (input) => {
           if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-          if (window.desktopBridge) {
-            await window.desktopBridge.browser.annotations.cancel(input);
+          const desktopBrowser = readDesktopBrowser();
+          if (desktopBrowser) {
+            await desktopBrowser.annotations.cancel(input);
             return;
           }
           throw new Error("Browser annotations require the desktop app.");
         },
         syncMarkers: async (input) => {
           if (remoteExecution) throw new Error(REMOTE_NATIVE_UNAVAILABLE);
-          if (window.desktopBridge) {
-            await window.desktopBridge.browser.annotations.syncMarkers(input);
+          const desktopBrowser = readDesktopBrowser();
+          if (desktopBrowser) {
+            await desktopBrowser.annotations.syncMarkers(input);
             return;
           }
           throw new Error("Browser annotations require the desktop app.");
         },
         onEvent: (callback) => {
           if (remoteExecution) return () => {};
-          if (window.desktopBridge) {
-            return window.desktopBridge.browser.annotations.onEvent(callback);
+          const desktopBrowser = readDesktopBrowser();
+          if (desktopBrowser) {
+            return desktopBrowser.annotations.onEvent(callback);
           }
           return () => {};
         },
       },
       onState: (callback) => {
         if (remoteExecution) return () => {};
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.onState(callback);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.onState(callback);
         }
         return fallbackBrowserStateListeners.subscribe(callback);
       },
       onCopyLink: (callback) => {
         if (remoteExecution) return () => {};
-        if (window.desktopBridge) {
-          return window.desktopBridge.browser.onBrowserCopyLink(callback);
+        const desktopBrowser = readDesktopBrowser();
+        if (desktopBrowser) {
+          return desktopBrowser.onBrowserCopyLink(callback);
         }
         return () => {};
       },

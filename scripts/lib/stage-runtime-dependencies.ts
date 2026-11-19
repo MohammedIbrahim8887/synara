@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { cp, mkdir, readFile, realpath, stat, symlink } from "node:fs/promises";
+import { cp, lstat, mkdir, readFile, realpath, stat, symlink } from "node:fs/promises";
 import path from "node:path";
 
 interface Manifest {
@@ -14,7 +14,12 @@ interface Manifest {
 /** Copy the installed, patched production graph, preserving distinct dependency versions.
  * All resulting links stay inside the artifact. Workspace/dev dependencies are not shipped.
  */
-export async function stageRuntimeDependencies(packageRoot: string, destination: string) {
+export async function stageRuntimeDependencies(
+  packageRoot: string,
+  destination: string,
+  /** Extra top-level packages resolved from another workspace, sharing one store. */
+  extraTopLevel: ReadonlyArray<{ readonly from: string; readonly names: readonly string[] }> = [],
+) {
   const visited = new Map<string, string>();
   const inventory: { name: string; version: string }[] = [];
   async function resolvePackage(name: string, from: string): Promise<string | undefined> {
@@ -76,5 +81,17 @@ export async function stageRuntimeDependencies(packageRoot: string, destination:
     await readFile(path.join(packageRoot, "package.json"), "utf8"),
   ) as Manifest;
   await dependencies(packageRoot, manifest, destination);
+  for (const extra of extraTopLevel) {
+    for (const name of extra.names) {
+      const exists = await lstat(path.join(destination, name)).then(
+        () => true,
+        (error: NodeJS.ErrnoException) => {
+          if (error.code === "ENOENT") return false;
+          throw error;
+        },
+      );
+      if (!exists) await link(name, extra.from, destination, false);
+    }
+  }
   return inventory.toSorted((a, b) => a.name.localeCompare(b.name));
 }

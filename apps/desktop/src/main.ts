@@ -312,6 +312,7 @@ import {
   sendBrowserCopyLink,
   sendBrowserState,
 } from "./browserIpc";
+import { DesktopBrowserAutomationHost } from "./browserAutomation/desktopBrowserAutomationHost";
 import {
   BrowserHostPipeServer,
   SYNARA_BROWSER_HOST_PIPE_PATH,
@@ -740,14 +741,16 @@ async function ensureBrowserHostPipeServer(): Promise<void> {
   if (browserHostPipeServer || !SYNARA_BROWSER_HOST_PIPE_PATH) {
     return;
   }
-  const server = new BrowserHostPipeServer(browserManager, {
-    vault: browserVault,
-    vaultCapture: browserVaultCapture,
+  const server = new BrowserHostPipeServer({
+    automationHost: new DesktopBrowserAutomationHost(browserManager, {
+      vault: browserVault,
+      vaultCapture: browserVaultCapture,
+      requestOpenPanel: (threadId) => {
+        if (!threadId) return;
+        mainWindow?.webContents.send(IPC.browser.requestOpenPanel, { threadId });
+      },
+    }),
     capability: DESKTOP_BROWSER_HOST_CAPABILITY,
-    requestOpenPanel: (threadId) => {
-      if (!threadId) return;
-      mainWindow?.webContents.send(IPC.browser.requestOpenPanel, { threadId });
-    },
   });
   await server.start();
   browserHostPipeServer = server;

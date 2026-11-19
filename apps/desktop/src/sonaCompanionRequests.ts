@@ -6,6 +6,8 @@ export function createCompanionRequestHandler(
     notify: (input: { title: string; body: string; silent: boolean }) => void;
     island: (mode: "hidden" | "compact" | "expanded", viewId: number) => void;
     ready: (viewId: number) => void;
+    /** The browser-pane socket, once the owned browser host is up; null if unavailable. */
+    browserPane?: () => Promise<{ url: string; token: string } | null>;
   },
 ) {
   let notifications: number[] = [];
@@ -53,6 +55,10 @@ export function createCompanionRequestHandler(
             return new Response(null, { status: 400, headers });
           actions.island(input.mode, input.viewId);
           break;
+        case "/browser-pane": {
+          const pane = actions.browserPane ? await actions.browserPane() : null;
+          return Response.json(pane, { headers: { ...headers, "Cache-Control": "no-store" } });
+        }
         default:
           return new Response(null, { status: 404, headers });
       }

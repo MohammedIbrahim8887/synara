@@ -2,16 +2,29 @@ import { homedir } from "node:os";
 import path from "node:path";
 import Electrobun, { BrowserWindow, PATHS, Utils } from "electrobun/main";
 import { startElectrobunBackend } from "../../src/electrobunBackend";
+import {
+  createSonaBrowserHostCredentials,
+  startSonaBrowserHost,
+} from "../../src/sonaOwnedBrowserHost";
 import { registerElectrobunExternalLinks } from "../../src/electrobunExternalLinks";
 
 import { createDesktopCompanion } from "./desktopCompanion";
 
 try {
-  const backend = await startElectrobunBackend(
-    path.join(PATHS.RESOURCES_FOLDER, "app", "runtime"),
-    process.env.SONA_PREVIEW_HOME ?? path.join(homedir(), ".sona"),
-  );
-  const companion = createDesktopCompanion(backend.origin, backend.url);
+  const runtime = path.join(PATHS.RESOURCES_FOLDER, "app", "runtime");
+  const home = process.env.SONA_PREVIEW_HOME ?? path.join(homedir(), ".sona");
+  const browserHostCredentials = createSonaBrowserHostCredentials(home);
+  const backend = await startElectrobunBackend(runtime, home, browserHostCredentials);
+  // Chromium starts alongside the window; the pane connects once it is ready.
+  const browserHost = startSonaBrowserHost({
+    runtime,
+    home,
+    allowedOrigin: backend.origin,
+    credentials: browserHostCredentials,
+  });
+  const companion = createDesktopCompanion(backend.origin, backend.url, {
+    browserPane: () => browserHost.pane,
+  });
   const window = new BrowserWindow({
     title: "Sona — Electrobun Preview",
     url: backend.url,
@@ -33,7 +46,7 @@ try {
     closing = true;
     dispose();
     companion.stop();
-    void backend.stop().finally(() => Utils.quit());
+    void Promise.allSettled([browserHost.stop(), backend.stop()]).finally(() => Utils.quit());
   });
   void backend.closed.then(async () => {
     if (closing) return;

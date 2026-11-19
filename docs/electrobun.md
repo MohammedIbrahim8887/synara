@@ -137,6 +137,11 @@ drag Sona to Applications, then open Sona. No checkout, separately installed Nod
 or development server is required. Provider CLIs, accounts, and external tools
 still have their usual requirements.
 
+Sona's browser pane and the agent's browser tools share a headless instance of
+Chrome, Chromium, Edge, or Brave installed on the Mac. Sona launches it with a
+dedicated profile under its data directory. To select a different installation,
+set `SONA_BROWSER_EXECUTABLE` to the browser executable before launching Sona.
+
 The bundle uses the isolated `dev.sona.desktop.preview` identity in Electrobun's
 development channel and stores backend data in `~/.sona`. It does not import or
 modify Synara Stable/Beta data or configure an update feed. A stored loopback port

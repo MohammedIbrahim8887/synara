@@ -51,6 +51,12 @@ const reactHarness = vi.hoisted(() => {
   };
 });
 
+vi.mock("~/sonaDesktop", () => ({ useSonaDesktop: () => window.sonaDesktop }));
+const sonaOpenRequest = vi.hoisted(() => vi.fn(() => vi.fn()));
+vi.mock("~/sonaBrowserPane", () => ({
+  readSonaBrowserBridge: () => ({ onBrowserUseOpenPanelRequest: sonaOpenRequest }),
+}));
+
 vi.mock("react", () => ({
   useEffect: reactHarness.useEffect,
   useEffectEvent: reactHarness.useEffectEvent,
@@ -152,6 +158,16 @@ describe("useBrowserPanelDesktopBridge", () => {
     render({ onToggle: null, onOpen: null });
     expect(bridge.unsubscribeMenu).toHaveBeenCalledOnce();
     expect(bridge.unsubscribeOpen).toHaveBeenCalledOnce();
+  });
+
+  it("subscribes when Sona registers its browser pane after the initial render", () => {
+    vi.stubGlobal("window", {});
+    const callbacks = { onToggle: null, onOpen: vi.fn() };
+    render(callbacks);
+    expect(sonaOpenRequest).not.toHaveBeenCalled();
+    Object.assign(window, { sonaDesktop: { browserPane: vi.fn() } });
+    render(callbacks);
+    expect(sonaOpenRequest).toHaveBeenCalledOnce();
   });
 
   it("does not subscribe outside the desktop bridge", () => {

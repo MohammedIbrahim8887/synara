@@ -36,9 +36,16 @@ const runtime = path.join(stage, "runtime");
 await mkdir(runtime);
 await cp(path.join(root, "apps/server/dist"), path.join(runtime, "backend"), { recursive: true });
 await cp(process.execPath, path.join(runtime, "node"));
+// The owned-browser host drives a local Chromium for the browser pane and browser_* tools.
+// Betterwright stays external: it starts its worker from its own package files.
+run("bun", [
+  "apps/desktop/scripts/build-owned-browser-host.ts",
+  path.join(runtime, "browser-host"),
+]);
 const inventory = await stageRuntimeDependencies(
   path.join(root, "apps/server"),
   path.join(runtime, "node_modules"),
+  [{ from: path.join(root, "apps/desktop"), names: ["betterwright"] }],
 );
 await writeFile(path.join(runtime, "dependencies.json"), JSON.stringify(inventory, null, 2));
 await cp(path.join(root, "LICENSE"), path.join(runtime, "LICENSE"));

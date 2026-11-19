@@ -1,4 +1,6 @@
 import { readExecutionContext } from "~/lib/hosts/executionContext";
+import { useSonaDesktop } from "~/sonaDesktop";
+import { readSonaBrowserBridge } from "~/sonaBrowserPane";
 import type { ThreadId } from "@synara/contracts";
 import { useEffect, useEffectEvent } from "react";
 
@@ -29,8 +31,12 @@ export function useBrowserPanelDesktopBridge(input: {
     };
   }, [toggleEnabled]);
 
+  const sonaDesktop = useSonaDesktop();
+  const onOpenBrowserPanelRequest =
+    window.desktopBridge?.browser.onBrowserUseOpenPanelRequest ??
+    (sonaDesktop?.browserPane && readSonaBrowserBridge()?.onBrowserUseOpenPanelRequest);
+
   useEffect(() => {
-    const onOpenBrowserPanelRequest = window.desktopBridge?.browser.onBrowserUseOpenPanelRequest;
     if (typeof onOpenBrowserPanelRequest !== "function" || !openEnabled) {
       return;
     }
@@ -42,5 +48,5 @@ export function useBrowserPanelDesktopBridge(input: {
     return () => {
       unsubscribe?.();
     };
-  }, [openEnabled]);
+  }, [onOpenBrowserPanelRequest, openEnabled]);
 }

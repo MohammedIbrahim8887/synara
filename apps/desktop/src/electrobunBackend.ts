@@ -2,12 +2,19 @@ import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import path from "node:path";
+import type { Writable } from "node:stream";
 import { spawnProcess } from "@synara/shared/processRuntime";
+
+import type { SonaBrowserHostCredentials } from "./sonaOwnedBrowserHost";
 
 /** Stable local origin preserves renderer preferences across launches. The server's
  * own data lock and stdin lifetime lease remain authoritative for ownership.
  */
-export async function startElectrobunBackend(resources: string, home: string) {
+export async function startElectrobunBackend(
+  resources: string,
+  home: string,
+  browserHost?: SonaBrowserHostCredentials,
+) {
   await mkdir(home, { recursive: true, mode: 0o700 });
   const portFile = path.join(home, "desktop-port");
   let requestedPort = 0;
@@ -49,6 +56,13 @@ export async function startElectrobunBackend(resources: string, home: string) {
     SYNARA_NO_BROWSER: "true",
     SYNARA_DESKTOP_PARENT_STDIN: "1",
     SYNARA_STATIC_DIR: path.join(resources, "backend", "client"),
+    ...(browserHost
+      ? {
+          SYNARA_BROWSER_HOST_PIPE_PATH: browserHost.pipePath,
+          // The capability is read once from this private fd, never the environment.
+          SYNARA_BROWSER_HOST_CAPABILITY_FD: "3",
+        }
+      : {}),
   });
   const child = spawnProcess(
     path.join(resources, "node"),
@@ -56,10 +70,11 @@ export async function startElectrobunBackend(resources: string, home: string) {
     {
       cwd: home,
       env,
-      stdio: ["pipe", "inherit", "inherit"],
+      stdio: browserHost ? ["pipe", "inherit", "inherit", "pipe"] : ["pipe", "inherit", "inherit"],
     },
   );
   child.stdin?.on("error", () => {});
+  if (browserHost) (child.stdio[3] as Writable | null)?.end(browserHost.capability);
   let failure: Error | undefined;
   child.once("error", (error) => {
     failure = error;

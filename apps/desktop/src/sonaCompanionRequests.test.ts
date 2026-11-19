@@ -72,4 +72,28 @@ describe("sandboxed desktop companion channel", () => {
     expect((await request("/island", { mode: "expanded", viewId: 2 })).status).toBe(204);
     expect(actions.island).toHaveBeenCalledExactlyOnceWith("expanded", 2);
   });
+  it("hands the browser-pane socket only to the authenticated Sona page", async () => {
+    const pane = { url: "ws://127.0.0.1:6000/pane", token: "pane-token" };
+    const handler = createCompanionRequestHandler(origin, "test-token", () => false, {
+      notify: vi.fn(),
+      island: vi.fn(),
+      ready: vi.fn(),
+      browserPane: async () => pane,
+    });
+    const request = (headers: Record<string, string>) =>
+      handler(
+        new Request("http://127.0.0.1:5500/browser-pane", {
+          method: "POST",
+          headers,
+          body: "{}",
+        }),
+      );
+    const allowed = await request({ origin, authorization: "Bearer test-token" });
+    expect(allowed.status).toBe(200);
+    expect(await allowed.json()).toEqual(pane);
+    expect(
+      (await request({ origin: "https://evil.test", authorization: "Bearer test-token" })).status,
+    ).toBe(403);
+    expect((await request({ origin, authorization: "Bearer wrong" })).status).toBe(403);
+  });
 });
