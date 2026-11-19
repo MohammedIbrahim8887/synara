@@ -480,6 +480,7 @@
   "updating": "Updating {{value0}}",
   "visualUnavailable": "Visual unavailable.",
   "autoCompactTarget": "Auto-compact target:",
+  "refreshModels": "Refresh models",
   "checkingForModels": "Checking for models…",
   "claudePromptCache": "Claude prompt cache:",
   "clearIsUnavailable": "Clear is unavailable",

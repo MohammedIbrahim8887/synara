@@ -151,7 +151,7 @@ describe("makeProviderModelDiscoveryCache", () => {
     const clock = makeClock();
     const cache = makeProviderModelDiscoveryCache<ProviderAdapterRequestError>({ now: clock.now });
     await Effect.runPromise(cache.lookup(KEY, Effect.succeed(CATALOG)));
-    clock.advance(61_000);
+    // A user may add a model immediately after opening the picker.
     const gate = Deferred.makeUnsafe<void>();
     const updated = { ...CATALOG, models: [{ slug: "new-model", name: "New model" }] };
     let calls = 0;

@@ -95,11 +95,13 @@ export interface ProviderModelDiscoveryCache<E> {
 }
 
 interface CatalogEntry {
+  readonly manual?: boolean;
   readonly result: ProviderListModelsResult;
   readonly storedAt: number;
 }
 
 interface FailureEntry {
+  readonly manual: boolean;
   readonly exit: Exit.Exit<ProviderListModelsResult, unknown>;
   readonly storedAt: number;
 }
@@ -249,11 +251,16 @@ export function makeProviderModelDiscoveryCache<E>(options?: {
     return entry;
   };
 
-  const storeCatalog = (serialized: string, result: ProviderListModelsResult, at: number) => {
+  const storeCatalog = (
+    serialized: string,
+    result: ProviderListModelsResult,
+    at: number,
+    manual: boolean,
+  ) => {
     failures.delete(serialized);
     // Re-insert so Map iteration order doubles as an LRU order.
     catalogs.delete(serialized);
-    catalogs.set(serialized, { result: { ...result, cached: false }, storedAt: at });
+    catalogs.set(serialized, { result: { ...result, cached: false }, storedAt: at, manual });
     while (catalogs.size > maxEntries) {
       const oldest = catalogs.keys().next().value;
       if (oldest === undefined) break;
@@ -266,8 +273,9 @@ export function makeProviderModelDiscoveryCache<E>(options?: {
     serialized: string,
     exit: Exit.Exit<ProviderListModelsResult, unknown>,
     at: number,
+    manual: boolean,
   ) => {
-    failures.set(serialized, { exit, storedAt: at });
+    failures.set(serialized, { exit, storedAt: at, manual });
     while (failures.size > maxEntries) {
       const oldest = failures.keys().next().value;
       if (oldest === undefined) break;
@@ -275,10 +283,10 @@ export function makeProviderModelDiscoveryCache<E>(options?: {
     }
   };
 
-  const applyExit = (serialized: string, exit: DiscoveryExit<E>) => {
+  const applyExit = (serialized: string, exit: DiscoveryExit<E>, manual: boolean) => {
     const at = now();
     if (Exit.isSuccess(exit) && isUsableCatalog(exit.value)) {
-      storeCatalog(serialized, exit.value, at);
+      storeCatalog(serialized, exit.value, at, manual);
       return;
     }
     // An error-free empty response is authoritative: do not keep offering
@@ -291,7 +299,7 @@ export function makeProviderModelDiscoveryCache<E>(options?: {
     ) {
       emitCatalogsChanged();
     }
-    storeFailure(serialized, exit, at);
+    storeFailure(serialized, exit, at, manual);
   };
 
   /**
@@ -303,6 +311,7 @@ export function makeProviderModelDiscoveryCache<E>(options?: {
     key: ProviderModelDiscoveryCacheKey,
     serialized: string,
     discover: Effect.Effect<ProviderListModelsResult, E>,
+    manual = false,
   ): Effect.Effect<Deferred.Deferred<ProviderListModelsResult, unknown>> =>
     Effect.gen(function* () {
       const existing = inflight.get(serialized);
@@ -325,7 +334,7 @@ export function makeProviderModelDiscoveryCache<E>(options?: {
         Effect.exit,
         Effect.flatMap((exit) => {
           inflight.delete(serialized);
-          applyExit(serialized, exit as DiscoveryExit<E>);
+          applyExit(serialized, exit as DiscoveryExit<E>, manual);
           return Deferred.done(deferred, exit);
         }),
       );
@@ -358,14 +367,22 @@ export function makeProviderModelDiscoveryCache<E>(options?: {
       if (refresh !== undefined) {
         const pending = inflight.get(serialized);
         if (pending !== undefined) return yield* awaitDiscovery(serialized, pending);
-        if (failure !== undefined) {
+        const manual = refresh === "now";
+        if (failure !== undefined && (!manual || failure.manual)) {
           return retainLastGoodCatalog(serialized, yield* failure.exit as DiscoveryExit<E>);
         }
-        const freshWindow = refresh === "now" ? MANUAL_REFRESH_MIN_INTERVAL_MS : freshTtlMs;
-        if (entry !== undefined && at - entry.storedAt <= freshWindow) {
+        const freshWindow = manual ? MANUAL_REFRESH_MIN_INTERVAL_MS : freshTtlMs;
+        if (
+          entry !== undefined &&
+          (!manual || entry.manual) &&
+          at - entry.storedAt <= freshWindow
+        ) {
           return { ...entry.result, cached: true };
         }
-        return yield* awaitDiscovery(serialized, yield* startDiscovery(key, serialized, discover));
+        return yield* awaitDiscovery(
+          serialized,
+          yield* startDiscovery(key, serialized, discover, manual),
+        );
       }
       if (entry !== undefined) {
         if (at - entry.storedAt <= freshTtlMs) {

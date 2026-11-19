@@ -379,6 +379,10 @@ are hidden. Model cycling prefers the active account's stars. A task that has st
 that provider's tab and starred entries are offered. Supported provider executables can be pointed
 at custom binary locations.
 
+After configuring models in the provider CLI, open the composer model picker, select the
+matching provider account, and click **Refresh models**. The picker rechecks discovery for
+the current project. Repeated manual scans within a minute reuse the latest successful scan.
+
 Starred models absent from the current catalog remain saved and can be removed, but cannot be
 selected. They become selectable again when discovery or custom model settings add them to the
 catalog.

@@ -182,23 +182,30 @@ describe("ComposerModelPicker", () => {
     }
   });
 
-  it("checks the viewed account silently and offers retry only after failure", async () => {
+  it("refreshes a healthy OpenCode account on demand and offers retry after failure", async () => {
     let finish!: () => void;
     const promise = new Promise<void>((resolve) => {
       finish = resolve;
     });
     const onRefreshModels = vi.fn().mockReturnValueOnce(promise);
-    const screen = await mountPicker({ onRefreshModels });
+    const screen = await mountPicker({
+      onRefreshModels,
+      providers: [readyProvider("codex"), readyProvider("opencode"), readyProvider("claudeAgent")],
+    });
     try {
       await vi.waitFor(() =>
         expect(onRefreshModels).toHaveBeenCalledExactlyOnceWith("codex", "codex", "if-stale"),
       );
-      expect(page.getByRole("button", { name: "Refresh models" }).elements()).toHaveLength(0);
+      await expect.element(page.getByRole("button", { name: "Refresh models" })).toBeDisabled();
       expect(page.getByRole("status").elements()).toHaveLength(0);
       await expect.element(page.getByRole("menuitem", { name: /GPT-5.5/u }).first()).toBeVisible();
       finish();
       await promise;
-      expect(page.getByRole("button", { name: "Refresh models" }).elements()).toHaveLength(0);
+      await page.getByRole("tab", { name: "OpenCode" }).click();
+      const refreshButton = page.getByRole("button", { name: "Refresh models" });
+      await expect.element(refreshButton).toBeEnabled();
+      await refreshButton.click();
+      expect(onRefreshModels).toHaveBeenLastCalledWith("opencode", "opencode", "now");
 
       onRefreshModels.mockRejectedValueOnce(new Error("offline"));
       await page.getByRole("tab", { name: "Claude" }).click();
@@ -218,7 +225,7 @@ describe("ComposerModelPicker", () => {
       await expect.element(retryButton).not.toBeInTheDocument();
       expect(page.getByRole("status").elements()).toHaveLength(0);
       await page.getByRole("tab", { name: "Starred" }).click();
-      expect(onRefreshModels).toHaveBeenCalledTimes(3);
+      expect(onRefreshModels).toHaveBeenCalledTimes(5);
     } finally {
       await screen.unmount();
     }
