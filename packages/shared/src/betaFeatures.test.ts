@@ -10,6 +10,7 @@ import {
   NATIVE_EDITOR_BETA_FEATURE,
 } from "./betaFeatures";
 import {
+  SONA_PRODUCTION_BUNDLE_ID,
   SYNARA_BETA_BUNDLE_ID,
   SYNARA_CANARY_BUNDLE_ID,
   SYNARA_CUA_BUNDLE_ID,
@@ -109,6 +110,7 @@ describe("isBetaFeatureEnabled", () => {
 
 describe("desktopFlavorFromBundleId", () => {
   it("maps each known bundle id", () => {
+    expect(desktopFlavorFromBundleId(SONA_PRODUCTION_BUNDLE_ID)).toBe("production");
     expect(desktopFlavorFromBundleId(SYNARA_PRODUCTION_BUNDLE_ID)).toBe("production");
     expect(desktopFlavorFromBundleId(SYNARA_DEVELOPMENT_BUNDLE_ID)).toBe("development");
     expect(desktopFlavorFromBundleId(SYNARA_CANARY_BUNDLE_ID)).toBe("canary");

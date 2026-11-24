@@ -36,6 +36,7 @@ export default defineConfig({
   external: [/^bun:/u],
   sourcemap: buildSourcemap,
   define: {
+    __SONA_RELEASE_VERSION__: JSON.stringify(process.env.SONA_RELEASE_VERSION) ?? "undefined",
     __SYNARA_MIGRATION_RUNTIME_SOURCE_DIGEST__: JSON.stringify(migrationRuntimeSourceDigest),
   },
   clean: true,

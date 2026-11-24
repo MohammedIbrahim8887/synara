@@ -3,6 +3,7 @@
 // Layer: Shared contracts (consumed by desktop main, server, and web UI)
 
 import {
+  SONA_PRODUCTION_BUNDLE_ID,
   SYNARA_BETA_BUNDLE_ID,
   SYNARA_CANARY_BUNDLE_ID,
   SYNARA_CUA_BUNDLE_ID,
@@ -90,6 +91,7 @@ export function desktopFlavorFromBundleId(
   bundleId: string | undefined,
 ): SynaraDesktopFlavor | "unknown" {
   switch (bundleId?.trim()) {
+    case SONA_PRODUCTION_BUNDLE_ID:
     case SYNARA_PRODUCTION_BUNDLE_ID:
       return "production";
     case SYNARA_DEVELOPMENT_BUNDLE_ID:

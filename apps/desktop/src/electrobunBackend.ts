@@ -4,6 +4,7 @@ import { createServer } from "node:net";
 import path from "node:path";
 import type { Writable } from "node:stream";
 import { spawnProcess } from "@synara/shared/processRuntime";
+import { SONA_PRODUCTION_BUNDLE_ID } from "@synara/shared/desktopIdentity";
 
 import type { SonaBrowserHostCredentials } from "./sonaOwnedBrowserHost";
 
@@ -49,7 +50,7 @@ export async function startElectrobunBackend(
   Object.assign(env, {
     SYNARA_HOME: home,
     SYNARA_MODE: "desktop",
-    SYNARA_DESKTOP_FLAVOR: "production",
+    SYNARA_DESKTOP_BUNDLE_ID: SONA_PRODUCTION_BUNDLE_ID,
     SYNARA_HOST: "127.0.0.1",
     SYNARA_PORT: String(port),
     SYNARA_AUTH_TOKEN: token,

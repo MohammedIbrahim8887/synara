@@ -65,6 +65,7 @@ import {
   SYNARA_DESKTOP_BUNDLE_ID_ENV,
 } from "@synara/shared/desktopIdentity";
 import { runBetaImportIfRequested } from "./betaImport";
+import { isSonaRelease } from "./buildVersion";
 import { startBetaUsageSnapshotJob } from "./betaUsageSnapshot";
 import { startHostUsageSnapshotJob } from "./hostUsageSnapshot";
 import { LATEST_MIGRATION_ID } from "./persistence/Migrations";
@@ -696,7 +697,10 @@ const makeServerProgram = (input: CliInput) =>
       Effect.forkChild,
     );
 
-    yield* Effect.logInfo("Synara running", makeServerStartupLogData(config));
+    yield* Effect.logInfo(
+      isSonaRelease ? "Sona running" : "Synara running",
+      makeServerStartupLogData(config),
+    );
     if (startupPairingUrl) {
       if (config.allowInsecureRemote && !config.publicUrl) {
         yield* Effect.logWarning(
@@ -814,7 +818,7 @@ const mcpIntegrationFlag = Flag.string("integration").pipe(
 // context. This avoids a duplicate `--home-dir` flag between the root command
 // and its MCP subcommands, which the Effect CLI assigns to the parent and
 // leaves the subcommand flag unset.
-const baseServerCommand = Command.make("synara", {
+const baseServerCommand = Command.make(isSonaRelease ? "sona" : "synara", {
   mode: modeFlag,
   port: portFlag,
   host: hostFlag,

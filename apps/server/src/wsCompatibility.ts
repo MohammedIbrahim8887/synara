@@ -14,7 +14,7 @@ import {
 } from "@synara/contracts";
 import { Effect } from "effect";
 
-import { version as serverBuild } from "../package.json" with { type: "json" };
+import { buildVersion as serverBuild } from "./buildVersion";
 
 const serverInstanceId = randomUUID();
 

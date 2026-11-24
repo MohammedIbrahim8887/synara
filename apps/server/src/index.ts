@@ -6,7 +6,7 @@ import * as Layer from "effect/Layer";
 import { CliConfig, synaraCli } from "./main";
 import { OpenLive } from "./open";
 import { Command } from "effect/unstable/cli";
-import { version } from "../package.json" with { type: "json" };
+import { buildVersion } from "./buildVersion";
 import { ServerLive } from "./effectServer";
 import { NetService } from "@synara/shared/Net";
 import { FetchHttpClient } from "effect/unstable/http";
@@ -25,7 +25,7 @@ const RuntimeLayer = Layer.empty.pipe(
   Layer.provideMerge(FetchHttpClient.layer),
 );
 
-Command.run(synaraCli, { version })
+Command.run(synaraCli, { version: buildVersion })
   .pipe(Effect.provide(RuntimeLayer))
   .pipe((program) => withDesktopParentLifetime(program, desktopParentInput))
   .pipe((program) => NodeRuntime.runMain(program as Effect.Effect<void, unknown, never>));

@@ -6,7 +6,7 @@ import { desktopFlavorFromBundleId } from "@synara/shared/betaFeatures";
 import { EnvironmentId, type ExecutionEnvironmentDescriptor } from "@synara/contracts";
 import { Effect, FileSystem, Layer, Path, Random } from "effect";
 
-import packageJson from "../../../package.json" with { type: "json" };
+import { buildVersion } from "../../buildVersion";
 import { ServerConfig } from "../../config";
 import { createFileStringExclusively } from "../../atomicWrite";
 import { ServerEnvironment, type ServerEnvironmentShape } from "../Services/ServerEnvironment";
@@ -96,7 +96,7 @@ export const makeServerEnvironment = Effect.fn(function* () {
       os: platformOs(),
       arch: platformArch(),
     },
-    serverVersion: packageJson.version,
+    serverVersion: buildVersion,
     capabilities: {
       desktopUpdates: desktopUpdateBridgeAvailable(),
       repositoryIdentity: true,
