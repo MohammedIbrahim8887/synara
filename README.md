@@ -117,9 +117,15 @@ Configure the shell to match the way you work with light and dark themes, typogr
 
 ### Desktop application
 
-Download the latest build from [GitHub Releases](https://github.com/Emanuele-web04/synara/releases) or visit [trysynara.com](https://www.trysynara.com/).
+Build the Sona 0.1.1 production installer on an Apple Silicon Mac with Node 24,
+Bun, and Hutch on your PATH:
 
-Current native release targets are Windows x64, macOS Intel, macOS Apple Silicon, and Linux x64.
+```console
+bun run dist:desktop
+```
+
+Open `release/sona/Sona-0.1.1-macos-arm64.dmg` and drag Sona to Applications.
+See the [Sona installer guide](./docs/electrobun.md#standalone-sona-installer-apple-silicon-mac).
 
 Workspace Git features require [Git 2.29 or newer](https://github.com/git/git/blob/v2.29.0/Documentation/RelNotes/2.29.0.txt). Background refreshes preserve the FETCH_HEAD used by explicit fetch workflows. Ahead/behind counts use local refs and can update on the next status poll, up to 60 seconds after a successful background refresh; status reads do not wait for the remote.
 

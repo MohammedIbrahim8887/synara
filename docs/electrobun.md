@@ -1,8 +1,8 @@
 # Electrobun migration status
 
-The upstream production desktop still uses Electron. Electrobun 2.0.6 has an isolated
-qualification target and a standalone Sona preview; neither has full native parity. Do not switch
-the default launcher or publish its artifacts until the parity gates below pass.
+Sona 0.1.1 ships as a standalone Electrobun 2.0.6 app on Apple Silicon Macs.
+The upstream Synara desktop uses Electron. Electrobun's isolated qualification
+target tracks native parity for the upstream launcher and publication workflow.
 
 ## Implemented foundation
 
@@ -127,13 +127,14 @@ Authorization URLs are never logged.
 With Node 24, the pinned Bun, and Hutch available on `PATH`, run:
 
 ```sh
-bun run dist:sona:preview
+bun run dist:desktop
 ```
 
 This builds the production web client and backend, stages the installed production
 dependency graph (including the repository's patches), bundles Node and CEF, and
-creates `release/sona-preview/Sona-0.1.0-preview-macos-arm64.dmg`. Open the DMG,
-drag Sona to Applications, then open Sona. No checkout, separately installed Node,
+creates `release/sona/Sona-0.1.1-macos-arm64.dmg`, its SHA-256 checksum, and a
+standalone `Sona.app`. Open the DMG, drag Sona to Applications, then open Sona.
+No checkout, separately installed Node,
 or development server is required. Provider CLIs, accounts, and external tools
 still have their usual requirements.
 
