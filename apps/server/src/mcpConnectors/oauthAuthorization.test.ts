@@ -13,10 +13,20 @@ vi.mock("./proxy.ts", async (importOriginal) => ({
 import { McpConnectorRuntime } from "./runtime";
 
 describe.each([
-  { presetId: "vercel", name: "Vercel", resource: "https://mcp.vercel.com/" },
-  { presetId: "composio", name: "Composio", resource: "https://connect.composio.dev/mcp" },
-])("$name connector OAuth", ({ presetId, name, resource }) => {
-  it("requests renewable access and refreshes the saved grant after a restart", async () => {
+  {
+    presetId: "vercel",
+    name: "Vercel",
+    resource: "https://mcp.vercel.com/",
+    scope: "openid offline_access",
+  },
+  {
+    presetId: "clickup",
+    name: "ClickUp",
+    resource: "https://mcp.clickup.com/mcp",
+    scope: "openid",
+  },
+])("$name connector OAuth", ({ presetId, name, resource, scope }) => {
+  it("uses the expected scopes and refreshes the saved grant after a restart", async () => {
     vi.clearAllMocks();
     let saved: string | null = null;
     let now = Date.parse("2026-10-16T10:00:00Z");
@@ -79,8 +89,8 @@ describe.each([
     const runtime = makeRuntime();
     const started = await runtime.connect({ presetId });
     const authorization = new URL(started.authorizationUrl!);
-    expect(authorization.searchParams.get("scope")).toBe("openid offline_access");
-    expect(registrationScope).toBe("openid offline_access");
+    expect(authorization.searchParams.get("scope")).toBe(scope);
+    expect(registrationScope).toBe(scope);
     expect(authorization.searchParams.get("code_challenge_method")).toBe("S256");
     expect(authorization.searchParams.get("state")).toBeTruthy();
     expect(

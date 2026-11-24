@@ -68,8 +68,6 @@ import type {
 } from "./externalMcp";
 import type {
   McpConnector,
-  ComposioSearchInput,
-  ComposioSearchResult,
   McpConnectorConnectInput,
   McpConnectorConnectResult,
   McpConnectorDisconnectInput,
@@ -1437,7 +1435,6 @@ export interface NativeApi {
     refreshExternalMcpPairing: (
       input: ExternalMcpRefreshPairingInput,
     ) => Promise<ExternalMcpCreateIntegrationResult>;
-    searchComposioTools: (input: ComposioSearchInput) => Promise<ComposioSearchResult>;
     listMcpConnectors: () => Promise<ReadonlyArray<McpConnector>>;
     listMcpConnectorProposals: () => Promise<ReadonlyArray<McpConnectorProposal>>;
     resolveMcpConnectorProposal: (

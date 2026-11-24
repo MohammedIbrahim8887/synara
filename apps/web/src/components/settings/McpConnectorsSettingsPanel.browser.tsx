@@ -10,7 +10,6 @@ import { McpConnectorsSettingsPanel } from "./McpConnectorsSettingsPanel";
 
 const api = vi.hoisted(() => ({
   listMcpConnectors: vi.fn(),
-  searchComposioTools: vi.fn(),
   getMcpConnectorSetup: vi.fn(),
   connectMcpConnector: vi.fn(),
   openExternal: vi.fn(),
@@ -251,11 +250,11 @@ it("adds a local command through the explicit run action", async () => {
   }
 });
 
-it("starts app discovery through its existing consent flow", async () => {
+it("opens ClickUp OAuth after confirmation in the direct catalog", async () => {
   api.listMcpConnectors.mockResolvedValue([]);
   api.listMcpConnectorProposals.mockResolvedValue([]);
   api.connectMcpConnector.mockResolvedValue({
-    authorizationUrl: "https://connect.composio.dev/oauth/authorize?state=fixture",
+    authorizationUrl: "https://mcp.clickup.com/oauth/authorize?state=fixture",
     connector: null,
   });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -265,85 +264,17 @@ it("starts app discovery through its existing consent flow", async () => {
     </QueryClientProvider>,
   );
   try {
-    await screen.getByRole("button", { name: "Connect apps", exact: true }).click();
+    await screen.getByRole("button", { name: /^ClickUp/ }).click();
     expect(api.connectMcpConnector).not.toHaveBeenCalled();
-    await screen.getByRole("button", { name: "Continue to Composio" }).click();
+    await screen.getByRole("button", { name: "Continue to ClickUp" }).click();
     await expect
       .poll(() => api.connectMcpConnector.mock.calls.at(-1)?.[0])
       .toEqual({
-        presetId: "composio",
+        presetId: "clickup",
       });
     await expect
       .poll(() => api.openExternal.mock.calls.at(-1)?.[0])
-      .toBe("https://connect.composio.dev/oauth/authorize?state=fixture");
-  } finally {
-    await screen.unmount();
-    queryClient.clear();
-    vi.clearAllMocks();
-  }
-});
-
-it("shows GitHub and searches the live Composio tool catalog", async () => {
-  api.listMcpConnectors.mockResolvedValue([
-    {
-      connectorId: "composio-connected",
-      presetId: "composio",
-      name: "Composio",
-      url: "https://connect.composio.dev/mcp",
-      serverName: "composio_connector",
-      authKind: "oauth",
-      status: "connected",
-      createdAt: "2026-11-15T00:00:00Z",
-      updatedAt: "2026-11-15T00:00:00Z",
-    },
-  ]);
-  api.listMcpConnectorProposals.mockResolvedValue([]);
-  api.searchComposioTools.mockResolvedValue({
-    tools: [
-      {
-        slug: "GITHUB_LIST_PULL_REQUESTS",
-        name: "List pull requests",
-        description: "Read pull requests.",
-      },
-    ],
-  });
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const screen = await render(
-    <QueryClientProvider client={queryClient}>
-      <McpConnectorsSettingsPanel active />
-    </QueryClientProvider>,
-  );
-  try {
-    await expect.element(screen.getByText("Developer apps")).toBeVisible();
-    await screen.getByRole("button", { name: "GitHub", exact: true }).click();
-    await expect
-      .poll(() => api.searchComposioTools.mock.calls.at(-1)?.[0])
-      .toEqual({ connectorId: "composio-connected", query: "GitHub" });
-    await expect.element(screen.getByText("List pull requests", { exact: true })).toBeVisible();
-    expect(api.connectMcpConnector).not.toHaveBeenCalled();
-  } finally {
-    await screen.unmount();
-    queryClient.clear();
-    vi.clearAllMocks();
-  }
-});
-
-it("requires sign-in before GitHub catalog search", async () => {
-  api.listMcpConnectors.mockResolvedValue([]);
-  api.listMcpConnectorProposals.mockResolvedValue([]);
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const screen = await render(
-    <QueryClientProvider client={queryClient}>
-      <McpConnectorsSettingsPanel active />
-    </QueryClientProvider>,
-  );
-  try {
-    await screen.getByRole("button", { name: "GitHub", exact: true }).click();
-    await expect
-      .element(screen.getByRole("button", { name: "Continue to Composio" }))
-      .toBeVisible();
-    expect(api.searchComposioTools).not.toHaveBeenCalled();
-    expect(api.connectMcpConnector).not.toHaveBeenCalled();
+      .toBe("https://mcp.clickup.com/oauth/authorize?state=fixture");
   } finally {
     await screen.unmount();
     queryClient.clear();

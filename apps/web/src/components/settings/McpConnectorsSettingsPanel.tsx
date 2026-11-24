@@ -59,7 +59,6 @@ import {
   McpConnectorProposalCard,
   mcpConnectorProposalsQueryOptions,
 } from "./McpConnectorProposalCard";
-import { ComposioDiscovery } from "./ComposioDiscovery";
 import { SettingsEmptyState } from "./SettingsPanelPrimitives";
 
 const CATEGORY_LABELS: Record<McpConnectorCategory, string> = {
@@ -69,7 +68,7 @@ const CATEGORY_LABELS: Record<McpConnectorCategory, string> = {
 };
 
 const PRESET_DESCRIPTION_KEYS: Readonly<Record<string, string>> = {
-  composio: "settings:connectorComposioDescription",
+  clickup: "settings:connectorClickupDescription",
   supabase: "settings:connectorSupabaseDescription",
   vercel: "settings:connectorVercelDescription",
   workos: "settings:connectorWorkosDescription",
@@ -437,7 +436,6 @@ export function McpConnectorsSettingsPanel(props: { active: boolean }) {
     category,
     presets: MCP_CONNECTOR_PRESETS.filter(
       (preset) =>
-        preset.id !== "composio" &&
         preset.category === category &&
         !connectedUrls.has(preset.url) &&
         matchesSearch(query, preset.name, presetDescription(preset, t)),
@@ -456,20 +454,6 @@ export function McpConnectorsSettingsPanel(props: { active: boolean }) {
 
   return (
     <div className="space-y-8">
-      <ComposioDiscovery
-        connectorId={
-          connectors.find(
-            (connector) =>
-              connector.transport !== "stdio" &&
-              connector.url === "https://connect.composio.dev/mcp" &&
-              connector.status === "connected",
-          )?.connectorId ?? null
-        }
-        onConnect={() => {
-          const preset = MCP_CONNECTOR_PRESETS.find((entry) => entry.id === "composio");
-          if (preset) setTarget(presetTarget(preset));
-        }}
-      />
       {visibleConnectors.length > 0 ? (
         <ConnectorShelf title="Your connectors" cards>
           {visibleConnectors.map((connector) => (

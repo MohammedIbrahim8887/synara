@@ -15,7 +15,6 @@ import { AgentGatewayCredentials } from "../../agentGateway/Services/AgentGatewa
 import { ServerSecretStore } from "../../auth/Services/ServerSecretStore.ts";
 import { isServerBetaFeatureEnabled } from "../../betaFeatureGate.ts";
 import { createLogger } from "../../logger.ts";
-import { searchComposioTools } from "../composioSearch.ts";
 import { jsonRpcErrorResult } from "../proxy.ts";
 import { McpConnectorFailure, McpConnectorRuntime } from "../runtime.ts";
 import {
@@ -90,15 +89,6 @@ export const makeMcpConnectors = (options: { readonly enabled?: boolean } = {}) 
 
     return {
       enabled,
-      searchComposio: (input) =>
-        enabled
-          ? Effect.tryPromise({
-              try: (signal) => searchComposioTools(runtime, input, signal),
-              catch: toConnectorError(
-                "Could not search Composio. Try reconnecting and search again.",
-              ),
-            })
-          : unavailable,
       listProposals: () => (enabled ? Effect.sync(() => runtime.listProposals()) : unavailable),
       proposeAdd: (input, threadId, cwd, source) =>
         enabled

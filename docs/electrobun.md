@@ -159,7 +159,7 @@ staged after Hutch builds the shell and is then included directly in the DMG.
 
 Native verification on macOS ARM64 / Electrobun 2.0.6 reproduced the blocked
 async popup, then confirmed a request reached a loopback test page in the default
-browser after both fixes. This proves browser launching, not a completed Composio
+browser after both fixes. This proves browser launching, not a completed connector
 login or tool execution. Other platforms remain unverified.
 
 ## Standalone preview verification (2026-11-16)
@@ -175,4 +175,4 @@ login or tool execution. Other platforms remain unverified.
   for `/inbox`, `/hubs`, `/spaces`, `/tasks`, and `/kanban`.
 - The broad backend run encountered a recovery-snapshot test failure and did not
   finish before interruption. Full backend-suite success is not claimed. Live
-  provider turns, completed Composio OAuth, and tool execution remain unverified.
+  provider turns, completed connector OAuth, and tool execution remain unverified.

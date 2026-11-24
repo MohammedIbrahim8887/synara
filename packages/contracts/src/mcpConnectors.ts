@@ -150,20 +150,3 @@ export const McpConnectorResolveProposalResult = Schema.Struct({
   authorizationUrl: Schema.NullOr(TrimmedNonEmptyString),
 });
 export type McpConnectorResolveProposalResult = typeof McpConnectorResolveProposalResult.Type;
-
-/** Read-only catalog discovery, never arbitrary tool execution. */
-export const ComposioSearchInput = Schema.Struct({
-  connectorId: McpConnectorId,
-  query: TrimmedNonEmptyString.check(Schema.isMaxLength(1000)),
-});
-export type ComposioSearchInput = typeof ComposioSearchInput.Type;
-export const ComposioSearchResult = Schema.Struct({
-  tools: Schema.Array(
-    Schema.Struct({
-      slug: Schema.String,
-      name: Schema.String,
-      description: Schema.String,
-    }),
-  ),
-});
-export type ComposioSearchResult = typeof ComposioSearchResult.Type;

@@ -254,7 +254,6 @@ import {
   ExternalMcpRevokeIntegrationInput,
 } from "./externalMcp";
 import {
-  ComposioSearchInput,
   McpConnectorConnectInput,
   McpConnectorDisconnectInput,
   McpConnectorResolveProposalInput,
@@ -386,7 +385,6 @@ export const WS_METHODS = {
   serverCreateExternalMcpIntegration: "server.createExternalMcpIntegration",
   serverRevokeExternalMcpIntegration: "server.revokeExternalMcpIntegration",
   serverRefreshExternalMcpPairing: "server.refreshExternalMcpPairing",
-  serverSearchComposioTools: "server.searchComposioTools",
   serverListMcpConnectors: "server.listMcpConnectors",
   serverListMcpConnectorProposals: "server.listMcpConnectorProposals",
   serverResolveMcpConnectorProposal: "server.resolveMcpConnectorProposal",
@@ -735,7 +733,6 @@ const WebSocketRequestBody = Schema.Union([
     tagRequestBody(WS_METHODS.serverConnectMcpConnector, McpConnectorConnectInput.members[1]),
     tagRequestBody(WS_METHODS.serverConnectMcpConnector, McpConnectorConnectInput.members[2]),
   ]),
-  tagRequestBody(WS_METHODS.serverSearchComposioTools, ComposioSearchInput),
   tagRequestBody(WS_METHODS.serverDisconnectMcpConnector, McpConnectorDisconnectInput),
   tagRequestBody(WS_METHODS.serverGetMcpConnectorSetup, Schema.Struct({})),
   tagRequestBody(WS_METHODS.serverListWorktrees, Schema.Struct({})),

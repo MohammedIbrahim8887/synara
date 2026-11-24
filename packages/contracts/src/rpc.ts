@@ -139,8 +139,6 @@ import {
 } from "./externalMcp";
 import {
   McpConnector,
-  ComposioSearchInput,
-  ComposioSearchResult,
   McpConnectorConnectInput,
   McpConnectorConnectResult,
   McpConnectorDisconnectInput,
@@ -1527,12 +1525,6 @@ export const WsServerRefreshExternalMcpPairingRpc = Rpc.make(
   },
 );
 
-export const WsServerSearchComposioToolsRpc = Rpc.make(WS_METHODS.serverSearchComposioTools, {
-  payload: ComposioSearchInput,
-  success: ComposioSearchResult,
-  error: WsRpcError,
-});
-
 export const WsServerListMcpConnectorsRpc = Rpc.make(WS_METHODS.serverListMcpConnectors, {
   payload: Schema.Struct({}),
   success: Schema.Array(McpConnector),
@@ -2458,7 +2450,6 @@ export type WsFeatureRpc =
   | typeof WsServerCreateExternalMcpIntegrationRpc
   | typeof WsServerRevokeExternalMcpIntegrationRpc
   | typeof WsServerRefreshExternalMcpPairingRpc
-  | typeof WsServerSearchComposioToolsRpc
   | typeof WsServerListMcpConnectorsRpc
   | typeof WsServerListMcpConnectorProposalsRpc
   | typeof WsServerResolveMcpConnectorProposalRpc
@@ -2666,7 +2657,6 @@ const wsApplicationRpcGroup = RpcGroup.make(
   WsServerCreateExternalMcpIntegrationRpc,
   WsServerRevokeExternalMcpIntegrationRpc,
   WsServerRefreshExternalMcpPairingRpc,
-  WsServerSearchComposioToolsRpc,
   WsServerListMcpConnectorsRpc,
   WsServerListMcpConnectorProposalsRpc,
   WsServerResolveMcpConnectorProposalRpc,

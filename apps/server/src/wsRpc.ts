@@ -2753,8 +2753,6 @@ const makeWsRpcHandlersLayer = () =>
             requireOwner.pipe(Effect.andThen(externalMcp.refreshPairing(input))),
             "Failed to refresh external MCP pairing",
           ),
-        [WS_METHODS.serverSearchComposioTools]: (input) =>
-          connectorRpc(mcpConnectors.searchComposio(input), "Failed to search Composio"),
         [WS_METHODS.serverListMcpConnectors]: () => listConnectorsForSession,
         [WS_METHODS.serverListMcpConnectorProposals]: () =>
           connectorRpc(mcpConnectors.listProposals(), "Failed to list connector proposals"),

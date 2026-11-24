@@ -9,7 +9,7 @@ describe("Electrobun external links", () => {
     const dispose = registerElectrobunExternalLinks(events, 7, open, vi.fn());
     const event = {
       data: {
-        detail: { url: "https://connect.composio.dev/authorize?state=fixture", userGesture: false },
+        detail: { url: "https://auth.example.test/authorize?state=fixture", userGesture: false },
       },
     };
     events.emit("new-window-open-8", event);

@@ -6,8 +6,6 @@
  * @module mcpConnectors/Services/McpConnectors
  */
 import type {
-  ComposioSearchInput,
-  ComposioSearchResult,
   McpConnector,
   McpConnectorConnectInput,
   McpConnectorConnectResult,
@@ -33,9 +31,6 @@ export class McpConnectorError extends Data.TaggedError("McpConnectorError")<{
 export interface McpConnectorsShape {
   /** When disabled, management refuses and the routes answer 404. */
   readonly enabled: boolean;
-  readonly searchComposio: (
-    input: ComposioSearchInput,
-  ) => Effect.Effect<ComposioSearchResult, McpConnectorError>;
   readonly list: () => Effect.Effect<ReadonlyArray<McpConnector>, McpConnectorError>;
   readonly connect: (
     input: McpConnectorConnectInput,
