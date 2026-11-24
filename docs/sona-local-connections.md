@@ -26,3 +26,53 @@ The macOS preview registers native **Edit** menu actions for undo, redo, cut, co
 paste, and select all. CEF text fields use these responder-chain actions for
 Command-key shortcuts; keep the menu registered in both preview entry points.
 The fix requires a rebuilt app, not just refreshed web assets.
+
+## Rules and workflows
+
+Open **Automations → Rules & workflows**. The overview explains each concept and
+offers starter templates. Rules have **Write** and **Draw** views: written rules and
+diagram steps are both included when the rule runs. Workflows use the diagram.
+Pick steps from the palette, connect their handles, and edit the selected step in
+the side panel. Choose a project scope, then **Save**. **Edit as JSON** in the menu
+edits the same host-owned definition. Definitions start disabled; importing JSON also disables the imported
+definition until the owner explicitly enables it. Invalid connections, recursion,
+and oversized graphs are rejected. Saving checks that another client has not changed
+the library; on a conflict, preserve your JSON, discard local changes, and reload.
+
+Enabled **rules** accompany every matching turn, including automation turns.
+**Require worktree** and **Require branch prefix** are server admission checks against
+the actual Git checkout before dispatch. A failing check prevents that turn from being
+sent to the provider. These checks do not sandbox shell commands or prevent an agent
+from changing branches during an admitted turn.
+
+**Instruction** steps describe commands, reviews, PR targets, or custom conventions.
+They remain agent-followed instructions, not verified completion gates. Connected steps
+are ordered before their dependents; independent steps run in a stable sequence.
+**Run a workflow** expands another enabled workflow within the same project scope.
+An unavailable dependency fails the turn rather than silently skipping it.
+
+**Tool** steps select a connected service and describe its task. Connect services
+first in **Settings → Connectors**; a diagram does not grant access to a service.
+**AI model** steps ask the agent to delegate through the existing thread tools and
+wait for the result. If those tools are unavailable, the agent is instructed to do
+the step itself and disclose that fallback. **Decision** steps carry yes/no branches;
+branch selection is agent-followed, not a separate server execution engine.
+
+Automations also have a **Tools** picker in creation and editing. Link multiple
+connected services, such as GitHub and ClickUp, then describe how the run should use
+them in the prompt. These links persist with the automation through an additive
+nullable database column (migration 145). Missing services remain visible so they
+can be unlinked; a saved link does not establish a connection or expand permissions.
+
+Start a chat message or automation prompt with `/workflow <id>` to invoke a saved
+workflow. The editor provides the command and **Run in chat** prepares an unsent draft
+using the existing project/provider defaults. Workflows run within the existing provider
+turn, with its normal approvals, cancellation, transcript, and automation reporting;
+there is no separate durable per-node execution or automatic per-node retry engine.
+
+**Draft with AI** turns a text description into an unsent authoring request.
+Review the returned JSON, paste it into **Edit as JSON**, and enable it when ready. Generated
+or repository-provided content cannot activate itself. Code-based definitions use the
+`FlowDefinition` schema in `packages/contracts/src/flows.ts`; import that JSON through
+the editor. Libraries are saved in the server settings file in the current app's data
+home, independently for each host/channel; no database migration is needed.

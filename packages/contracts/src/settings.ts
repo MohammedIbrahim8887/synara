@@ -1,3 +1,4 @@
+import { FlowDefinitions } from "./flows";
 import { Schema } from "effect";
 import { IsoDateTime, NonNegativeInt, TrimmedString } from "./baseSchemas";
 import { DEFAULT_GIT_TEXT_GENERATION_MODEL } from "./model";
@@ -158,6 +159,7 @@ export const NewThreadDefaults = Schema.Struct({
 export type NewThreadDefaults = typeof NewThreadDefaults.Type;
 
 export const ServerSettings = Schema.Struct({
+  flows: FlowDefinitions.pipe(Schema.withDecodingDefault(() => [])),
   autoResumeAfterUsageLimits: Schema.Boolean.pipe(Schema.withDecodingDefault(() => false)),
   // Server-owned epoch: disabling invalidates pending waits across a rapid re-enable/restart.
   usageLimitRecoveryEpoch: NonNegativeInt.pipe(Schema.withDecodingDefault(() => 0)),
@@ -229,6 +231,7 @@ const ProviderSettingsBasePatch = {
 };
 
 export const ServerSettingsPatch = Schema.Struct({
+  flows: Schema.optionalKey(FlowDefinitions),
   autoResumeAfterUsageLimits: Schema.optionalKey(Schema.Boolean),
   enableAssistantStreaming: Schema.optionalKey(Schema.Boolean),
   enableProviderUpdateChecks: Schema.optionalKey(Schema.Boolean),

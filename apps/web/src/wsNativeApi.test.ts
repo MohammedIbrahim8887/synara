@@ -427,6 +427,7 @@ describe("wsNativeApi", () => {
 
     const payload = {
       settings: {
+        flows: [],
         autoResumeAfterUsageLimits: false,
         usageLimitRecoveryEpoch: 0,
         enableAssistantStreaming: true,

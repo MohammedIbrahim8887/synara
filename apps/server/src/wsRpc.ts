@@ -2711,7 +2711,9 @@ const makeWsRpcHandlersLayer = () =>
           rpcEffect(serverSettings.getSettingsView, "Failed to load server settings"),
         [WS_METHODS.serverUpdateSettings]: (input) =>
           rpcEffect(
-            (input.legacyProviders === undefined && input.legacyProviderInstances === undefined
+            (input.flows === undefined &&
+            input.legacyProviders === undefined &&
+            input.legacyProviderInstances === undefined
               ? Effect.void
               : requireWsOwnerSession
             ).pipe(Effect.andThen(serverSettings.updateSettingsView(input))),

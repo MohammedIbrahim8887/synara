@@ -1,3 +1,4 @@
+import { FlowDefinitions } from "./flows";
 import { Effect, Schema, SchemaTransformation } from "effect";
 import {
   IsoDateTime,
@@ -722,6 +723,7 @@ export type ServerGetEnvironmentResult = typeof ServerGetEnvironmentResult.Type;
 
 export const ServerUpdateSettingsInput = Schema.Struct({
   ...ServerSettingsPatch.fields,
+  expectedFlows: Schema.optionalKey(FlowDefinitions),
   /** Import provider defaults and explicit instances from the owner's legacy browser settings. */
   legacyProviders: ServerSettingsPatch.fields.providers,
   legacyProviderInstances: Schema.optionalKey(ProviderInstanceConfigMap),

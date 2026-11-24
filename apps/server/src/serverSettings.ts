@@ -1,3 +1,4 @@
+import { validateFlows } from "@synara/shared/flows";
 /**
  * ServerSettings - Server-authoritative settings persistence.
  *
@@ -187,6 +188,7 @@ export class ServerSettingsService extends ServiceMap.Service<
         ) =>
           Effect.gen(function* () {
             const current = yield* Ref.get(currentSettingsRef);
+            yield* checkFlowWrite(current, patch, "<memory>");
             const prepared = prepareLegacyProviderImport(
               current,
               derivePatch?.(projectSettings(current)) ?? patch,
@@ -578,6 +580,22 @@ function prepareLegacyProviderImport(
   };
 }
 
+function checkFlowWrite(
+  current: ServerSettings,
+  patch: ServerUpdateSettingsInput,
+  settingsPath: string,
+) {
+  return patch.flows !== undefined &&
+    (patch.expectedFlows === undefined || !isDeepStrictEqual(patch.expectedFlows, current.flows))
+    ? Effect.fail(
+        new ServerSettingsError({
+          settingsPath,
+          detail: "Rules and workflows changed. Reload before saving your changes.",
+        }),
+      )
+    : Effect.void;
+}
+
 function normalizeSettings(
   settingsPath: string,
   current: ServerSettings,
@@ -587,6 +605,18 @@ function normalizeSettings(
     preserveRedactedProviderInstanceEnvironment(current, patch),
   );
   const next = applyServerSettingsPatch(current, preservedPatch);
+  try {
+    validateFlows(next.flows);
+  } catch (cause) {
+    return Effect.fail(
+      new ServerSettingsError({
+        settingsPath,
+        detail: cause instanceof Error ? cause.message : "Invalid flows",
+        cause,
+      }),
+    );
+  }
+
   return Schema.decodeUnknownEffect(ServerSettings)({
     ...next,
     usageLimitRecoveryEpoch:
@@ -1322,6 +1352,7 @@ const makeServerSettings = Effect.gen(function* () {
           Effect.gen(function* () {
             const disk = yield* loadSettingsFromDisk(providerPasswordSnapshots);
             const current = disk.settings;
+            yield* checkFlowWrite(current, initialPatch, settingsPath);
             const { patch, imports } = prepareLegacyProviderImport(
               current,
               derivePatch?.(projectSettings(current)) ?? initialPatch,

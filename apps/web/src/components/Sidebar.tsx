@@ -1493,7 +1493,8 @@ export default function Sidebar() {
   const isOnSettings = workspaceSurfacePath === "/settings";
   const isOnKanban = workspaceSurfacePath.startsWith("/kanban");
   const isOnTasks = workspaceSurfacePath.startsWith("/tasks");
-  const isOnAutomations = workspaceSurfacePath.startsWith("/automations");
+  const isOnAutomations =
+    workspaceSurfacePath.startsWith("/automations") || workspaceSurfacePath === "/flows";
   const isOnPullRequests = workspaceSurfacePath.startsWith("/pull-requests");
   const isOnInbox = workspaceSurfacePath.startsWith("/inbox");
   // Lightweight read of automations to drive the sidebar count badge. Shares the

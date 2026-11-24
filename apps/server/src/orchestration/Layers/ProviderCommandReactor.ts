@@ -1,3 +1,4 @@
+import { resolveTurnFlows, flowAdmissionIssue } from "@synara/shared/flows";
 import { appendAppSnapPromptContext } from "../../provider/appSnapPromptContext.ts";
 import { isServerBetaFeatureEnabled } from "../../betaFeatureGate";
 import { MCP_CONNECTORS_BETA_FEATURE } from "@synara/shared/betaFeatures";
@@ -3698,7 +3699,70 @@ const make = Effect.gen(function* () {
           worktreeOf: threadWorktreePath ? threadProject.workspaceRoot : null,
         })
       : null;
-    const projectContext = [projectContextPacket, projectFoldersPreamble ?? ""]
+    const flowSettings = yield* serverSettings.getSettings;
+    const turnFlows = yield* Effect.try({
+      try: () =>
+        resolveTurnFlows({
+          flows: flowSettings.flows,
+          projectId: thread.projectId,
+          message: input.messageText,
+          allowInvocation:
+            input.dispatchOrigin !== "agent" && input.turnKind !== "goal-continuation",
+        }),
+      catch: (cause) =>
+        new ProviderAdapterValidationError({
+          provider: thread.modelSelection.provider,
+          operation: "thread.turn.start",
+          issue: cause instanceof Error ? cause.message : "Invalid rules or workflow.",
+        }),
+    });
+    if (
+      turnFlows.steps.some(
+        (step) => step.kind === "require-worktree" || step.kind === "branch-prefix",
+      )
+    ) {
+      const cwd = yield* resolveProjectedThreadWorkspaceCwd(thread);
+      if (!cwd)
+        return yield* new ProviderAdapterValidationError({
+          provider: thread.modelSelection.provider,
+          operation: "thread.turn.start",
+          issue: "Cannot verify rules without a working directory.",
+        });
+      const admission = yield* Effect.gen(function* () {
+        const dirs = yield* git.execute({
+          operation: "flow-workspace-check",
+          cwd,
+          args: ["rev-parse", "--path-format=absolute", "--git-dir", "--git-common-dir"],
+        });
+        const [gitDir, commonDir] = dirs.stdout.trim().split(/\r?\n/);
+        const branch = yield* git.execute({
+          operation: "flow-branch-check",
+          cwd,
+          args: ["symbolic-ref", "--quiet", "--short", "HEAD"],
+          allowNonZeroExit: true,
+        });
+        return flowAdmissionIssue(turnFlows.steps, {
+          isWorktree: Boolean(gitDir && commonDir && gitDir !== commonDir),
+          branch: branch.code === 0 ? branch.stdout.trim() : null,
+        });
+      }).pipe(
+        Effect.mapError(
+          (cause) =>
+            new ProviderAdapterValidationError({
+              provider: thread.modelSelection.provider,
+              operation: "thread.turn.start",
+              issue: `Cannot verify rules: ${cause.message}`,
+            }),
+        ),
+      );
+      if (admission)
+        return yield* new ProviderAdapterValidationError({
+          provider: thread.modelSelection.provider,
+          operation: "thread.turn.start",
+          issue: admission,
+        });
+    }
+    const projectContext = [projectContextPacket, projectFoldersPreamble ?? "", turnFlows.prompt]
       .filter((block) => block.trim().length > 0)
       .join("\n\n");
     const debugPromptOverheadChars = debugModePromptOverheadChars(input.interactionMode);
@@ -3710,7 +3774,7 @@ const make = Effect.gen(function* () {
     // but do not ask the provider to interpret a native slash command.
     const authoredMessageText = computerInvocation
       ? computerInvocation.prompt || "Use Synara Computer for this task."
-      : input.messageText;
+      : turnFlows.message;
     // Typed skill tokens count only in words a person or automation wrote, not in
     // another agent's message or a generated goal continuation.
     const resolveTypedSkills =

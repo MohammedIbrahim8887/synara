@@ -555,6 +555,10 @@
     "./releaseDownloads": {
       "types": "./src/releaseDownloads.ts",
       "import": "./src/releaseDownloads.ts"
+    },
+    "./flows": {
+      "types": "./src/flows.ts",
+      "import": "./src/flows.ts"
     }
   },
   "scripts": {
