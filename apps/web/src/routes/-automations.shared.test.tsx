@@ -523,6 +523,19 @@ describe("automation shared route helpers", () => {
     expect(createInputFromForm(form).notificationPolicy).toBe("failed-runs-only");
   });
 
+  it("round-trips linked tools through form payloads and defaults new drafts to none", () => {
+    const linkedTools = [{ serverName: "linear_connector", name: "Linear" }];
+    const form = {
+      ...formFromDefinition(definitionWith({ linkedTools }), "project-1"),
+      name: "Triage issues",
+      prompt: "Triage new Linear issues.",
+    };
+
+    expect(form.linkedTools).toEqual(linkedTools);
+    expect(createInputFromForm(form).linkedTools).toEqual(linkedTools);
+    expect(formFromDefinition(null, "project-1").linkedTools).toEqual([]);
+  });
+
   it("preserves saved provider options when editing without changing models", () => {
     const savedProviderOptions: ProviderStartOptions = {
       opencode: { binaryPath: "/old/opencode", serverUrl: "http://old.example" },

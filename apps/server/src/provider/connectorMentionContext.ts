@@ -1,7 +1,8 @@
 /**
  * `@` mentions of Connectors never reach providers as native mentions:
  * Codex would treat `connector://` as a plugin path and Droid as a local path.
- * They become one context block naming the MCP server to use instead.
+ * They become one context block naming the MCP server to use instead. An
+ * automation's linked tools reuse the same block, worded for a run.
  *
  * @module provider/connectorMentionContext
  */
@@ -17,7 +18,7 @@ const MAX_CONNECTOR_NAME_CHARS = 60;
 export interface ConnectorMentionProjection {
   /** Every mention that is not a connector, for the thread/provider projection. */
   readonly otherMentions: ReadonlyArray<ProviderMentionReference> | undefined;
-  /** Zero or one `<mentioned_connectors>` block. */
+  /** Zero or one `<mentioned_connectors>` (or, for automations, `<linked_connectors>`) block. */
   readonly contextBlocks: readonly string[];
 }
 
@@ -30,11 +31,40 @@ function sanitizeConnectorName(name: string): string {
     .slice(0, MAX_CONNECTOR_NAME_CHARS);
 }
 
+/**
+ * Who referenced the connectors: the user, with `@` mentions in a message, or an
+ * automation, whose linked tools every run receives as synthesized mentions.
+ */
+export type ConnectorContextSource = "mention" | "automation";
+
+const CONNECTOR_CONTEXT_WORDING: Record<
+  ConnectorContextSource,
+  { readonly tag: string; readonly lead: string; readonly unavailable: string }
+> = {
+  mention: {
+    tag: "mentioned_connectors",
+    lead: "The user mentioned these connected services. Use the tools of the matching MCP server:",
+    // Grants are fixed when the session starts, and some agents get no
+    // connectors at all, so the server may be missing from this session.
+    unavailable:
+      "If a server is not available in this session, do not guess its results: tell the user to start a new chat, or to reconnect it in Settings → Connectors.",
+  },
+  automation: {
+    tag: "linked_connectors",
+    lead: "This automation is linked to these connected services. Use the tools of the matching MCP server for this run:",
+    unavailable:
+      "If a server is not available in this session, do not guess its results: say so in the automation result and tell the user to reconnect it in Settings → Connectors.",
+  },
+};
+
 export function projectConnectorMentions(input: {
   readonly mentions: ReadonlyArray<ProviderMentionReference> | undefined;
   /** When connectors are disabled, their mentions are dropped without a block. */
   readonly enabled: boolean;
+  /** Defaults to `mention`. */
+  readonly source?: ConnectorContextSource;
 }): ConnectorMentionProjection {
+  const wording = CONNECTOR_CONTEXT_WORDING[input.source ?? "mention"];
   const mentions = input.mentions ?? [];
   const otherMentions = mentions.filter((mention) => !isMcpConnectorMentionPath(mention.path));
   const lines: string[] = [];
@@ -51,13 +81,11 @@ export function projectConnectorMentions(input: {
       input.enabled && lines.length > 0
         ? [
             [
-              "<mentioned_connectors>",
-              "The user mentioned these connected services. Use the tools of the matching MCP server:",
+              `<${wording.tag}>`,
+              wording.lead,
               ...lines,
-              // Grants are fixed when the session starts, and some agents get no
-              // connectors at all, so the server may be missing from this session.
-              "If a server is not available in this session, do not guess its results: tell the user to start a new chat, or to reconnect it in Settings → Connectors.",
-              "</mentioned_connectors>",
+              wording.unavailable,
+              `</${wording.tag}>`,
             ].join("\n"),
           ]
         : [],

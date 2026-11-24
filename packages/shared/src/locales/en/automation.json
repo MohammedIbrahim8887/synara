@@ -197,5 +197,11 @@
   "intentOnceAt": "Once at {{time}}",
   "intentDailyAt": "Daily at {{time}}",
   "intentWeekdaysAt": "Weekdays at {{time}}",
-  "intentWeeklyAt": "Weekly at {{time}}"
+  "intentWeeklyAt": "Weekly at {{time}}",
+  "tools_label": "Tools",
+  "tools_labelWithCount": "Tools: {{count}}",
+  "tools_menuLabel": "Tools each run uses",
+  "tools_empty": "No tools connected yet.",
+  "tools_notConnected": "Not connected",
+  "tools_connectMore": "Connect more tools…"
 }

@@ -33,6 +33,7 @@ import {
   ComposerPickerMenuSubPopup,
 } from "~/components/chat/ComposerPickerMenuPopup";
 import { ProviderModelPicker } from "~/components/chat/ProviderModelPicker";
+import { AutomationToolsPicker } from "~/components/automation/AutomationToolsPicker";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogPopup, DialogTitle } from "~/components/ui/dialog";
@@ -1424,6 +1425,12 @@ export function AutomationDialog({
                 ) : null}
               </ComposerPickerMenuPopup>
             </Menu>
+
+            <AutomationToolsPicker
+              value={form.linkedTools}
+              onChange={(linkedTools) => setField("linkedTools", linkedTools)}
+              triggerClassName={CHIP_CLASS}
+            />
 
             <Menu>
               <MenuTrigger

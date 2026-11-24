@@ -5,6 +5,7 @@ import {
   DEFAULT_AUTOMATION_HEARTBEAT_COOLDOWN_SECONDS,
   DEFAULT_AUTOMATION_STOP_AFTER_CONSECUTIVE_FAILURES,
   DEFAULT_AUTOMATION_STOP_CONFIDENCE_THRESHOLD,
+  LinkedTools,
   ProjectId,
   ThreadId,
   TurnId,
@@ -13,6 +14,7 @@ import {
   type AutomationNotificationPolicy,
   type AutomationSchedule as AutomationScheduleType,
   type AutomationWorktreeMode,
+  type LinkedTool,
   type ModelSelection,
   type OrchestrationThreadShell,
 } from "@synara/contracts";
@@ -136,6 +138,22 @@ const COMPLETION_POLICY_INPUT_SCHEMA = {
   ],
 } as const;
 
+const LINKED_TOOLS_INPUT_SCHEMA = {
+  type: "array",
+  maxItems: 20,
+  description:
+    "Connected tools (Connectors) every run is told to use: serverName is the MCP server name from synara_list_mcp_connectors (e.g. linear_connector), name its display name. On update a passed list replaces the stored one and an omitted one keeps it.",
+  items: {
+    type: "object",
+    properties: {
+      serverName: { type: "string", pattern: "^[a-z][a-z0-9_]{0,79}$" },
+      name: { type: "string", minLength: 1, maxLength: 60 },
+    },
+    required: ["serverName", "name"],
+    additionalProperties: false,
+  },
+} as const;
+
 interface AutomationToolDependencies {
   readonly automationService: AutomationServiceShape;
   readonly requireThreadShell: (
@@ -193,6 +211,23 @@ function decodeCompletionPolicy(
     confidenceThreshold:
       readNumberArg(raw, "confidenceThreshold") ?? DEFAULT_AUTOMATION_STOP_CONFIDENCE_THRESHOLD,
   };
+}
+
+function decodeLinkedTools(args: Record<string, unknown>): ReadonlyArray<LinkedTool> | undefined {
+  const raw = args.linkedTools;
+  if (raw === undefined) return undefined;
+  let tools: ReadonlyArray<LinkedTool>;
+  try {
+    tools = Schema.decodeUnknownSync(LinkedTools)(raw);
+  } catch (error) {
+    throw new ToolInputError(`Invalid linkedTools: ${errorText(error)}`);
+  }
+  const seen = new Set<string>();
+  return tools.filter((tool) => {
+    if (seen.has(tool.serverName)) return false;
+    seen.add(tool.serverName);
+    return true;
+  });
 }
 
 function readNullablePositiveInteger(
@@ -354,6 +389,7 @@ export function makeAgentGatewayAutomationTools(
             description:
               'Declarative retirement rule, available in every mode. "ai-evaluated" checks stopWhen against each successful run and disables the automation when it matches, so the stop condition does not depend on the run remembering to cancel itself. Defaults to {"type":"none"}.',
           },
+          linkedTools: LINKED_TOOLS_INPUT_SCHEMA,
           heartbeatCooldownSeconds: {
             type: "number",
             minimum: 0,
@@ -441,6 +477,7 @@ export function makeAgentGatewayAutomationTools(
             : requestedFailureThreshold;
         const completionPolicy = decodeCompletionPolicy(args) ?? { type: "none" as const };
         const notificationPolicy = readNotificationPolicy(args) ?? "all";
+        const linkedTools = decodeLinkedTools(args) ?? [];
         const suggested = readBooleanArg(args, "suggested") ?? false;
         const requestedEnabled = readBooleanArg(args, "enabled");
         if (suggested && requestedEnabled === true) {
@@ -554,6 +591,7 @@ export function makeAgentGatewayAutomationTools(
             proposalState: suggested ? "pending" : null,
             notificationPolicy,
             heartbeatCooldownSeconds,
+            linkedTools,
             maxIterations,
             stopAfterConsecutiveFailures,
             completionPolicy,
@@ -586,6 +624,7 @@ export function makeAgentGatewayAutomationTools(
           proposalState: definition.proposalState ?? null,
           enabled: definition.enabled,
           modelSelection: definition.modelSelection,
+          linkedTools: definition.linkedTools ?? [],
         });
       }).pipe(Effect.catch((error) => Effect.succeed(automationToolFailure(error)))),
   };
@@ -595,7 +634,7 @@ export function makeAgentGatewayAutomationTools(
     definition: {
       name: "synara_list_automations",
       description:
-        "List Synara automations (id, name, mode, schedule, exact model selection, target thread, enabled, next run).",
+        "List Synara automations (id, name, mode, schedule, exact model selection, target thread, linked tools, enabled, next run).",
       inputSchema: {
         type: "object",
         properties: {
@@ -626,6 +665,7 @@ export function makeAgentGatewayAutomationTools(
             maxIterations: definition.maxIterations,
             notificationPolicy: definition.notificationPolicy ?? "all",
             modelSelection: definition.modelSelection,
+            linkedTools: definition.linkedTools ?? [],
           })),
         });
       }).pipe(Effect.catch((error) => Effect.succeed(automationToolFailure(error)))),
@@ -674,7 +714,7 @@ export function makeAgentGatewayAutomationTools(
           automationService.getMemory(definition.id),
         ]).pipe(Effect.mapError((error) => new ToolInputError(errorText(error))));
         return mcpToolResultJson({
-          definition,
+          definition: { ...definition, linkedTools: definition.linkedTools ?? [] },
           nextRunAt: definition.nextRunAt,
           runs,
           memoryExcerpt: memory ? automationMemoryForEnvelope(memory.content) : "(empty)",
@@ -688,7 +728,7 @@ export function makeAgentGatewayAutomationTools(
     requiresActiveTurn: true,
     definition: {
       name: "synara_update_automation",
-      description: `Fully replace an automation's mutable configuration. ${AUTOMATION_AUTHORING_GUIDANCE} You MUST call synara_view_automation first, then resend name, prompt, schedule, enabled, maxIterations, stopAfterConsecutiveFailures, notificationPolicy, and completionPolicy, including every unchanged field. Partial updates are rejected. A standalone or dedicated automation may also pass an exact target from synara_capabilities; omitting target preserves the stored selection, and heartbeat targets cannot be switched. A dedicated automation cannot switch away from its established task's provider; create a new automation for another provider.`,
+      description: `Fully replace an automation's mutable configuration. ${AUTOMATION_AUTHORING_GUIDANCE} You MUST call synara_view_automation first, then resend name, prompt, schedule, enabled, maxIterations, stopAfterConsecutiveFailures, notificationPolicy, and completionPolicy, including every unchanged field. Partial updates are rejected. A standalone or dedicated automation may also pass an exact target from synara_capabilities; omitting target preserves the stored selection, and heartbeat targets cannot be switched. linkedTools likewise replaces the whole list when passed and is preserved when omitted. A dedicated automation cannot switch away from its established task's provider; create a new automation for another provider.`,
       inputSchema: {
         type: "object",
         properties: {
@@ -705,6 +745,7 @@ export function makeAgentGatewayAutomationTools(
           maxIterations: { type: ["number", "null"], minimum: 1 },
           stopAfterConsecutiveFailures: { type: ["number", "null"], minimum: 1 },
           notificationPolicy: { type: "string", enum: ["all", "failed-runs-only"] },
+          linkedTools: LINKED_TOOLS_INPUT_SCHEMA,
           completionPolicy: {
             ...COMPLETION_POLICY_INPUT_SCHEMA,
             description:
@@ -775,6 +816,7 @@ export function makeAgentGatewayAutomationTools(
         if (notificationPolicy === undefined) {
           throw new ToolInputError('Missing required argument "notificationPolicy".');
         }
+        const linkedTools = decodeLinkedTools(args);
         const explicitTarget = readModelSelectionArg(args, "target");
         if (explicitTarget !== undefined && automationRequiresTargetThread(definition.mode)) {
           throw new ToolInputError(
@@ -800,6 +842,7 @@ export function makeAgentGatewayAutomationTools(
             notificationPolicy,
             completionPolicy,
             acknowledgedRisks,
+            ...(linkedTools !== undefined ? { linkedTools } : {}),
             ...(modelSelection !== undefined ? { modelSelection } : {}),
           })
           .pipe(Effect.mapError((error) => new ToolInputError(errorText(error))));

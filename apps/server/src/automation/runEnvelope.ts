@@ -1,8 +1,12 @@
+import { workflowInvocation } from "@synara/shared/flows";
 // FILE: runEnvelope.ts
 // Purpose: Builds the single canonical synthetic message sent to automation runs.
 
 import type { AutomationDefinition, AutomationRun } from "@synara/contracts";
 import { automationContinuesThread, automationOwnsItsThread } from "@synara/shared/automationMode";
+import { mcpConnectorMentionPath } from "@synara/shared/mcpConnectors";
+
+import { projectConnectorMentions } from "../provider/connectorMentionContext.ts";
 
 export const AUTOMATION_MEMORY_INJECTION_MAX_BYTES = 8 * 1_024;
 export const AUTOMATION_MEMORY_TRUNCATION_MARKER = "[... older automation memory truncated ...]\n";
@@ -59,15 +63,37 @@ function threadScopeLine(definition: AutomationDefinition): string | null {
   return null;
 }
 
+// Linked tools reach the run as the same context block `@` mentions of a connector produce,
+// so the sanitizing of user-chosen names and the server-missing fallback stay in one place.
+function linkedToolsBlock(definition: AutomationDefinition, connectorsEnabled: boolean) {
+  const linkedTools = definition.linkedTools ?? [];
+  if (linkedTools.length === 0) return null;
+  return (
+    projectConnectorMentions({
+      mentions: linkedTools.map((tool) => ({
+        name: tool.name,
+        path: mcpConnectorMentionPath(tool.serverName),
+      })),
+      enabled: connectorsEnabled,
+      source: "automation",
+    }).contextBlocks[0] ?? null
+  );
+}
+
 export function buildAutomationRunEnvelope(input: {
   readonly definition: AutomationDefinition;
   readonly run: AutomationRun;
   readonly memoryContent: string;
   readonly lastRunAt: string | null;
+  /** When Connectors are off for this host, linked tools are left out. Defaults to on. */
+  readonly connectorsEnabled?: boolean;
 }): string {
   const { definition, run } = input;
   const threadScope = threadScopeLine(definition);
+  const toolsBlock = linkedToolsBlock(definition, input.connectorsEnabled ?? true);
+  const workflow = workflowInvocation(definition.prompt);
   return [
+    ...(workflow ? [`/workflow ${workflow[1]}`] : []),
     `Automation: ${definition.name}`,
     `Automation ID: ${definition.id}`,
     `Run: ${run.trigger.type}, scheduled for ${run.scheduledFor} (last run: ${
@@ -80,6 +106,7 @@ export function buildAutomationRunEnvelope(input: {
     "",
     reportingInstructions(definition.mode),
     "",
+    ...(toolsBlock ? [toolsBlock, ""] : []),
     "---",
     "",
     definition.prompt,
