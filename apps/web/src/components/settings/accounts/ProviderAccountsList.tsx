@@ -84,7 +84,7 @@ function providerAccountIdentityFields(
         label: t("settings:claudeConfigDirectory"),
         placeholder: "~/.claude-work",
         description:
-          "Leave blank and Synara keeps this account's sign-in in its own folder. " +
+          "Leave blank and Sona keeps this account's sign-in in its own folder. " +
           "Set a directory to use a Claude config folder you already signed in to.",
       },
     ];

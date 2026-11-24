@@ -1216,7 +1216,7 @@ export function AutomationDialog({
               <span>{readExecutionContext()?.execution.label ?? "This computer"}</span>
             )}
           </div>
-          <p>This computer must stay awake with Synara running. Other computers can be closed.</p>
+          <p>This computer must stay awake with Sona running. Other computers can be closed.</p>
           {projects.length === 0 ? (
             <p>Add a project on this computer before creating an automation.</p>
           ) : null}

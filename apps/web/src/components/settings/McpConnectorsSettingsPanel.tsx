@@ -325,7 +325,7 @@ function AddCustomConnectorDialog(props: {
         <DialogHeader>
           <DialogTitle>{t("settings:addCustomConnector")}</DialogTitle>
           <DialogDescription>
-            A public HTTPS or loopback HTTP MCP server. Synara signs in with OAuth when the server
+            A public HTTPS or loopback HTTP MCP server. Sona signs in with OAuth when the server
             asks for it.
           </DialogDescription>
         </DialogHeader>

@@ -6385,7 +6385,7 @@ describe("ChatView transcript geometry (full app)", () => {
       const previousTop = scrollContainer.scrollTop;
       emitWsTransportState("connecting");
       await expect
-        .element(page.getByRole("status").filter({ hasText: "Reconnecting to Synara…" }), {
+        .element(page.getByRole("status").filter({ hasText: "Reconnecting to Sona…" }), {
           timeout: 4000,
         })
         .toBeVisible();
@@ -6393,7 +6393,7 @@ describe("ChatView transcript geometry (full app)", () => {
       expect(Math.abs(scrollContainer.scrollTop - previousTop)).toBeLessThanOrEqual(1);
       emitWsTransportState("open");
       await expect
-        .element(page.getByRole("status").filter({ hasText: "Reconnecting to Synara…" }))
+        .element(page.getByRole("status").filter({ hasText: "Reconnecting to Sona…" }))
         .not.toBeInTheDocument();
       await waitForLayout();
       expect(Math.abs(scrollContainer.scrollTop - previousTop)).toBeLessThanOrEqual(1);

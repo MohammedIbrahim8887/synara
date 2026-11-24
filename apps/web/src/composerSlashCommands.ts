@@ -231,7 +231,7 @@ const COMPOSER_SLASH_COMMAND_DEFINITIONS: Record<
   "computer-use": {
     command: "computer-use",
     label: "/computer-use",
-    description: "Use Synara Computer for this request only",
+    description: "Use Sona Computer for this request only",
     source: "app",
   },
   fast: {

@@ -1,18 +1,12 @@
 <div align="center">
-  <img src="./assets/prod/logo.svg" width="112" alt="Synara logo">
-  <h1>Synara</h1>
+  <img src="./apps/web/public/branding/sona-logo.png" width="112" alt="Sona logo">
+  <h1>Sona</h1>
   <p><strong>A focused workspace for coding agents.</strong><br>
   Projects, provider sessions, execution surfaces, and review tools in one local-first desktop application.</p>
   <p>
-    <a href="https://github.com/Emanuele-web04/synara/releases/latest">Download</a>
-    &nbsp;·&nbsp;
-    <a href="https://www.trysynara.com/">Website</a>
-    &nbsp;·&nbsp;
-    <a href="https://www.trysynara.com/docs">Documentation</a>
+    <a href="#desktop-application">Install Sona</a>
     &nbsp;·&nbsp;
     <a href="./docs/external-mcp.md">MCP integration</a>
-    &nbsp;·&nbsp;
-    <a href="https://github.com/Emanuele-web04/synara/issues/new/choose">Report an issue</a>
   </p>
 </div>
 
@@ -29,9 +23,6 @@
 | **Thread**           | Task-specific conversation, state, files, and history.        |
 | **Provider session** | The authenticated coding-agent runtime executing the task.    |
 | **Workspace tools**  | Changes, terminal, browser, files, editor, previews, and Git. |
-
-> [!NOTE]
-> Synara is early-stage software. APIs and interface details remain under active development.
 
 ## Capabilities
 
@@ -66,7 +57,7 @@ Keep an active conversation alongside the surface it is changing. Split views, b
 
 ### 4. Provider-native integrations
 
-Synara connects to coding-agent runtimes that are installed and authenticated locally. The current development build includes the following integrations:
+Sona connects to coding-agent runtimes that are installed and authenticated locally:
 
 | Runtime         | Local integration                           |
 | --------------- | ------------------------------------------- |
@@ -131,15 +122,13 @@ Workspace Git features require [Git 2.29 or newer](https://github.com/git/git/bl
 
 ### Provider setup
 
-Synara uses the provider installations and subscriptions already configured on the local machine. Install and authenticate the runtime you intend to use before starting a session. For Codex sessions, follow the [Codex CLI setup](https://github.com/openai/codex).
+Sona uses the provider installations and subscriptions already configured on the local machine. Install and authenticate the runtime you intend to use before starting a session. For Codex sessions, follow the [Codex CLI setup](https://github.com/openai/codex).
 
 ### Run from source
 
-The development checkout uses [Bun 1.4.4](https://bun.sh/) and [Node.js 24.13.1](https://nodejs.org/).
+From this checkout, use [Bun 1.4.4](https://bun.sh/) and [Node.js 24.13.1](https://nodejs.org/).
 
 ```console
-git clone https://github.com/Emanuele-web04/synara.git
-cd synara
 bun install
 bun run dev
 ```
@@ -162,8 +151,8 @@ the root `typecheck` command also ensures that patch is applied before checking.
 
 Bug fixes, reliability improvements, performance work, documentation, and maintenance changes are welcome.
 
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. For a reproducible problem, [open an issue](https://github.com/Emanuele-web04/synara/issues/new/choose) with the Synara version, operating system, runtime, and relevant logs.
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. When reporting a reproducible problem, include the Sona version, operating system, runtime, and relevant logs.
 
 ## License
 
-Synara is licensed under the [MIT License](./LICENSE).
+Sona is licensed under the [MIT License](./LICENSE).

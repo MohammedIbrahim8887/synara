@@ -431,7 +431,7 @@ function TransportCompatibilityView({ issue }: { issue: WsCompatibilityError }) 
       ? "Update or reload this client, then reconnect."
       : issue.action === "update-server"
         ? "Update or restart the server, then reload this client."
-        : "Reload the app. If this repeats, restart Synara so the client and server use matching builds.";
+        : "Reload the app. If this repeats, restart Sona so the client and server use matching builds.";
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10 text-foreground sm:px-6">
@@ -625,7 +625,7 @@ async function runProviderUpdateAll(params: {
         if (!isProviderKind(driver)) {
           failures.push({
             provider,
-            reason: "This provider driver cannot be updated by this Synara build.",
+            reason: "This provider driver cannot be updated by this Sona build.",
           });
           continue;
         }

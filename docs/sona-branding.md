@@ -1,9 +1,7 @@
 # Sona artwork
 
-The app uses Sona as its visible brand. Existing package names, data directories,
-protocols, and update identities remain compatible with the existing installation.
-The running Electrobun preview is kept open; its native title updates on its next
-build and launch.
+The production installer uses the Sona name, icon, and `dev.sona.desktop`
+bundle identity. It keeps the existing Sona workspace data in `~/.sona`.
 
 Assets generated with the built-in imagegen tool:
 
@@ -38,4 +36,4 @@ contains standard and Retina sizes through 1024px. These are packaging derivativ
 of the generated transparent logo, created with sips and iconutil. Electrobun's
 configuration references the iconset, ICO, and PNG for their respective platforms.
 Windows and Linux packaging remain unverified locally. Existing Electron release
-icons are outside this Electrobun preview change.
+icons belong to the upstream Synara distribution.

@@ -76,3 +76,9 @@ or repository-provided content cannot activate itself. Code-based definitions us
 `FlowDefinition` schema in `packages/contracts/src/flows.ts`; import that JSON through
 the editor. Libraries are saved in the server settings file in the current app's data
 home, independently for each host/channel; no database migration is needed.
+
+The Sona production installer includes `NSMicrophoneUsageDescription` before signing.
+Microphone recording still requires both the native CEF permission prompt and macOS
+permission for **Sona**. Updating the source does not repair a previously built app:
+rebuild the installer with `bun run dist:desktop`. Do not reset Synara's or Sona's privacy database to
+work around a denied grant.

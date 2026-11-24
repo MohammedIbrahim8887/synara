@@ -383,7 +383,7 @@ function LocalAppSnapCoordinator() {
           // fresh-thread creation: the user actively went somewhere else, so
           // follow them there instead of failing the capture.
           const focused = focusedTargetRef.current;
-          if (!focused) throw new Error("Synara could not create a task for this AppSnap.");
+          if (!focused) throw new Error("Sona could not create a task for this AppSnap.");
           target = focused;
           openChatThreadPage(target.threadId);
         }
