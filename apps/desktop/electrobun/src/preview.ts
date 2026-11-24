@@ -1,10 +1,12 @@
 // Local preview only; the authenticated production desktop migration is not complete.
 import Electrobun, { BrowserWindow, Utils } from "electrobun/main";
 import { registerElectrobunExternalLinks } from "../../src/electrobunExternalLinks";
+import { installApplicationMenu } from "./applicationMenu";
 
+installApplicationMenu();
 const origin = "http://localhost:6733";
 const window = new BrowserWindow({
-  title: "Sona — Electrobun Preview",
+  title: "Sona (Dev)",
   url: origin,
   renderer: "cef",
   sandbox: true,

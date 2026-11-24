@@ -12,10 +12,17 @@ For historical hosted-service behavior, the legacy code remains dormant behind `
 
 The QR tile stays square at narrow widths, with its doughnut mark centred inside the code. Settings remains available in the sidebar independently of account controls.
 
-## Desktop attention and Dynamic Island
+## Desktop notifications
 
 The Electrobun app forwards completion and attention-needed events to native desktop notifications with sound, respecting the existing Notifications settings and foreground suppression. **Settings → Notifications → Test notification** exercises the native path. macOS notification permissions, sound preferences and Focus mode still apply.
 
-**Dynamic Island** in the desktop sidebar opens an always-on-top panel at the primary screen's top work area. Expand its running-session counter to see active work and pending questions; selecting a session opens the existing chat surface, including prompts and provider-specific approval/question controls. Collapse it to the counter or close the panel without stopping sessions. This is a Mac desktop companion, not an iOS Live Activity or Android overlay.
+Dynamic Island has been removed; active sessions and questions remain available in the main app.
 
-The companion uses a per-launch capability token on a loopback-only endpoint, validates the app origin and limits request bodies and notification frequency. Both webviews retain Electrobun's RPC sandbox. The panel closes with the main app. OS notification submission does not guarantee delivery when system permissions or Focus suppress it.
+The companion uses a per-launch capability token on a loopback-only endpoint, validates the app origin and limits request bodies and notification frequency. The main webview retains Electrobun's RPC sandbox. The companion endpoint stops with the main app. OS notification submission does not guarantee delivery when system permissions or Focus suppress it.
+
+## Text editing in the desktop preview
+
+The macOS preview registers native **Edit** menu actions for undo, redo, cut, copy,
+paste, and select all. CEF text fields use these responder-chain actions for
+Command-key shortcuts; keep the menu registered in both preview entry points.
+The fix requires a rebuilt app, not just refreshed web assets.

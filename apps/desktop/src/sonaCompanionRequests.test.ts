@@ -6,7 +6,6 @@ describe("sandboxed desktop companion channel", () => {
   function setup() {
     const actions = {
       notify: vi.fn(),
-      island: vi.fn(),
       ready: vi.fn(),
     };
     const stopped = { value: false };
@@ -35,19 +34,18 @@ describe("sandboxed desktop companion channel", () => {
     expect(
       (
         await request(
-          "/island",
-          { mode: "compact", viewId: 1 },
+          "/ready",
+          { viewId: 1 },
           { origin: "https://evil.test", authorization: "Bearer test-token" },
         )
       ).status,
     ).toBe(403);
-    expect(
-      (await request("/island", { mode: "compact", viewId: 1 }, { origin, authorization: "" }))
-        .status,
-    ).toBe(403);
+    expect((await request("/ready", { viewId: 1 }, { origin, authorization: "" })).status).toBe(
+      403,
+    );
     stopped.value = true;
-    expect((await request("/island", { mode: "compact", viewId: 1 })).status).toBe(403);
-    expect(actions.island).not.toHaveBeenCalled();
+    expect((await request("/ready", { viewId: 1 })).status).toBe(403);
+    expect(actions.ready).not.toHaveBeenCalled();
   });
   it("validates notification copy and submits sound-enabled notifications", async () => {
     const { request, actions } = setup();
@@ -67,16 +65,13 @@ describe("sandboxed desktop companion channel", () => {
       expect((await request("/notify", { title: "Done", body: "" })).status).toBe(204);
     expect((await request("/notify", { title: "Done", body: "" })).status).toBe(429);
     expect((await request("/execute", {})).status).toBe(404);
-    expect((await request("/island", { mode: "fullscreen", viewId: 1 })).status).toBe(400);
-    expect((await request("/island", { mode: "expanded" })).status).toBe(400);
-    expect((await request("/island", { mode: "expanded", viewId: 2 })).status).toBe(204);
-    expect(actions.island).toHaveBeenCalledExactlyOnceWith("expanded", 2);
+    expect((await request("/island", { mode: "expanded", viewId: 2 })).status).toBe(404);
+    expect(actions.ready).not.toHaveBeenCalled();
   });
   it("hands the browser-pane socket only to the authenticated Sona page", async () => {
     const pane = { url: "ws://127.0.0.1:6000/pane", token: "pane-token" };
     const handler = createCompanionRequestHandler(origin, "test-token", () => false, {
       notify: vi.fn(),
-      island: vi.fn(),
       ready: vi.fn(),
       browserPane: async () => pane,
     });

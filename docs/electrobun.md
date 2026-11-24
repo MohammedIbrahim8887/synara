@@ -143,20 +143,21 @@ Chrome, Chromium, Edge, or Brave installed on the Mac. Sona launches it with a
 dedicated profile under its data directory. To select a different installation,
 set `SONA_BROWSER_EXECUTABLE` to the browser executable before launching Sona.
 
-The bundle uses the isolated `dev.sona.desktop.preview` identity in Electrobun's
-development channel and stores backend data in `~/.sona`. It does not import or
-modify Synara Stable/Beta data or configure an update feed. A stored loopback port
+The bundle uses `dev.sona.desktop` in Electrobun's stable channel and reuses
+the installed Sona preview's backend data in `~/.sona`. Quit the preview before
+opening Sona 0.1.1. macOS may prompt again for microphone access under the new
+bundle identity. The installer has no update feed. A stored loopback port
 keeps browser preferences stable across launches; a concurrent instance is refused.
 The backend uses its existing stdin parent-lifetime lease and the renderer uses
-the existing authenticated pairing bootstrap. `SONA_PREVIEW_HOME` can select a
-separate data directory for local smoke tests.
+the existing authenticated pairing bootstrap. Set `SONA_HOME` in the app's
+environment to a short path such as one created by `mktemp -d /tmp/sona-smoke.XXXXXX`
+for local smoke tests. The browser host uses a Unix socket under that directory.
 
-This is an ad-hoc signed local preview, **not notarized**. Windows, Intel Mac,
+This local build uses ad-hoc signing and has no Apple notarization. Windows, Intel Mac,
 and Linux installers are not produced by this command. Native Electron-only
 services listed above remain unported. Packaging uses a regular application
-bundle because Electrobun 2.0.6's self-extracting archive did not preserve the
-runtime's dependency symlinks in the local launch test. The dependency tree is
-staged after Hutch builds the shell and is then included directly in the DMG.
+bundle. After Hutch builds the stable shell, the installer extracts the inner
+app and adds the runtime with its dependency symlinks intact before creating the DMG.
 
 Native verification on macOS ARM64 / Electrobun 2.0.6 reproduced the blocked
 async popup, then confirmed a request reached a loopback test page in the default

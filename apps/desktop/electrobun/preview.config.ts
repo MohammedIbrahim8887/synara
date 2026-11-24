@@ -3,7 +3,7 @@ import type { ElectrobunConfig } from "electrobun";
 // Single trusted app view only. Do not apply this popup policy to guest browsers.
 export default {
   app: {
-    name: "Synara Electrobun Preview",
+    name: "Sona Dev",
     identifier: "com.emanueledipietro.synara.electrobun.preview",
     version: "0.0.1",
   },

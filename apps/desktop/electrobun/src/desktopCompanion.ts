@@ -1,11 +1,9 @@
 import { createCompanionRequestHandler } from "../../src/sonaCompanionRequests";
-import { BrowserWindow, Screen, Utils } from "electrobun/main";
-import { islandFrame, raiseIntoNotch, type IslandMode } from "./notchWindow";
+import { BrowserWindow, Utils } from "electrobun/main";
 
 /** Capability-authenticated loopback channel keeps the renderer's RPC sandbox enabled. */
 export function createDesktopCompanion(
   origin: string,
-  appUrl: string,
   options: { browserPane?: () => Promise<{ url: string; token: string } | null> } = {},
 ) {
   const token = crypto.randomUUID();
@@ -15,10 +13,7 @@ export function createDesktopCompanion(
     clearInterval(timers.get(viewId));
     timers.delete(viewId);
   }
-  function attach(
-    window: BrowserWindow,
-    islandView: Exclude<IslandMode, "hidden"> | false = false,
-  ) {
+  function attach(window: BrowserWindow) {
     const view = window.webview;
     const initialize = () => {
       ready(view.id);
@@ -28,7 +23,7 @@ export function createDesktopCompanion(
           ready(view.id);
           return;
         }
-        view.executeJavascript(preload(islandView, view.id));
+        view.executeJavascript(preload(view.id));
       }, 250);
       timers.set(view.id, timer);
     };
@@ -38,48 +33,6 @@ export function createDesktopCompanion(
     window.on("close", () => ready(view.id));
     initialize();
   }
-  // Transparent CEF windows do not repaint after a native resize, so the pill and
-  // the expanded panel are separate fixed-size windows instead of one resized window.
-  let pill: BrowserWindow | undefined;
-  let panel: BrowserWindow | undefined;
-  let pillWanted = false;
-  function createIslandWindow(variant: Exclude<IslandMode, "hidden">) {
-    const window = new BrowserWindow({
-      title: variant === "compact" ? "Sona Island" : "Sona Island Panel",
-      url: appUrl,
-      renderer: "cef",
-      sandbox: true,
-      titleBarStyle: "hidden",
-      transparent: true,
-      hidden: true,
-      activate: false,
-      allowedProtocols: { views: false, appData: false },
-      navigationRules: JSON.stringify([`${origin}/*`]),
-      frame: islandFrame(Screen.getPrimaryDisplay(), variant),
-    });
-    if (!raiseIntoNotch(window.ptr)) window.setAlwaysOnTop(true);
-    attach(window, variant);
-    window.on("close", () => {
-      if (window === pill) pill = undefined;
-      if (window === panel) panel = undefined;
-    });
-    return window;
-  }
-  function setIsland(mode: IslandMode, viewId: number) {
-    if (stopped) return;
-    const fromPanel = panel !== undefined && viewId === panel.webview.id;
-    if (mode === "expanded") {
-      panel ??= createIslandWindow("expanded");
-      panel.show();
-      pill?.hide();
-      return;
-    }
-    if (fromPanel) panel?.hide();
-    else pillWanted = mode === "compact";
-    if (panel?.isVisible()) return;
-    if (pillWanted) pill?.showInactive();
-    else pill?.hide();
-  }
   const server = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
@@ -87,11 +40,10 @@ export function createDesktopCompanion(
     fetch: createCompanionRequestHandler(origin, token, () => stopped, {
       ready,
       notify: Utils.showNotification,
-      island: setIsland,
       ...(options.browserPane ? { browserPane: options.browserPane } : {}),
     }),
   });
-  function preload(islandView: Exclude<IslandMode, "hidden"> | false, viewId: number) {
+  function preload(viewId: number) {
     return `if (location.origin === ${JSON.stringify(origin)} && window === window.top && !window.sonaDesktop) {
       const request = async (path, body = {}) => {
         const response = await fetch(${JSON.stringify(`http://127.0.0.1:${server.port}`)} + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: ${JSON.stringify(`Bearer ${token}`)} }, body: JSON.stringify(body) });
@@ -101,21 +53,16 @@ export function createDesktopCompanion(
         const response = await fetch(${JSON.stringify(`http://127.0.0.1:${server.port}`)} + '/browser-pane', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: ${JSON.stringify(`Bearer ${token}`)} }, body: '{}' });
         return response.ok ? response.json() : null;
       };
-      Object.defineProperty(window, 'sonaDesktop', { value: Object.freeze({ island: ${JSON.stringify(islandView)}, notify: value => request('/notify', value), setIsland: mode => request('/island', { mode, viewId: ${viewId} })${options.browserPane && !islandView ? ", browserPane" : ""} }) });
+      Object.defineProperty(window, 'sonaDesktop', { value: Object.freeze({ notify: value => request('/notify', value)${options.browserPane ? ", browserPane" : ""} }) });
       window.dispatchEvent(new Event("sona-desktop-ready"));
       void request("/ready", { viewId: ${viewId} }).catch(() => {});
     }`;
   }
-  // The pill lives at the notch for the app's lifetime; its renderer decides
-  // when there is live work to show.
-  pill = createIslandWindow("compact");
   return {
     attach,
     stop() {
       stopped = true;
       for (const id of timers.keys()) ready(id);
-      pill?.close();
-      panel?.close();
       void server.stop(true);
     },
   };

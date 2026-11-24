@@ -9,10 +9,13 @@ import {
 import { registerElectrobunExternalLinks } from "../../src/electrobunExternalLinks";
 
 import { createDesktopCompanion } from "./desktopCompanion";
+import { installApplicationMenu } from "./applicationMenu";
 
 try {
+  installApplicationMenu();
   const runtime = path.join(PATHS.RESOURCES_FOLDER, "app", "runtime");
-  const home = process.env.SONA_PREVIEW_HOME ?? path.join(homedir(), ".sona");
+  const home =
+    process.env.SONA_HOME ?? process.env.SONA_PREVIEW_HOME ?? path.join(homedir(), ".sona");
   const browserHostCredentials = createSonaBrowserHostCredentials(home);
   const backend = await startElectrobunBackend(runtime, home, browserHostCredentials);
   // Chromium starts alongside the window; the pane connects once it is ready.
@@ -22,11 +25,11 @@ try {
     allowedOrigin: backend.origin,
     credentials: browserHostCredentials,
   });
-  const companion = createDesktopCompanion(backend.origin, backend.url, {
+  const companion = createDesktopCompanion(backend.origin, {
     browserPane: () => browserHost.pane,
   });
   const window = new BrowserWindow({
-    title: "Sona — Electrobun Preview",
+    title: "Sona",
     url: backend.url,
     renderer: "cef",
     sandbox: true,
