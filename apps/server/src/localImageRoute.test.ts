@@ -277,6 +277,35 @@ async function withEffectServer(
 }
 
 describe("localImageEffectRouteLayer", () => {
+  it("streams workspace video ranges for playback and seeking", async () => {
+    const workspace = makeTempDir("synara-video-preview-");
+    writeFileSync(path.join(workspace, ".git"), "gitdir: .git");
+    const bytes = Buffer.from([1, 2, 3, 4]);
+    await withEffectServer(
+      makeServerConfig({ cwd: workspace }),
+      localImageEffectRouteLayer,
+      async (origin) => {
+        for (const [name, mime] of [
+          ["review.MP4", "video/mp4"],
+          ["review.webm", "video/webm"],
+          ["review.mov", "video/quicktime"],
+          ["review.m4v", "video/"],
+          ["review.ogv", "video/ogg"],
+        ] as const) {
+          writeFileSync(path.join(workspace, name), bytes);
+          const params = new URLSearchParams({ path: name, cwd: workspace });
+          const response = await fetch(`${origin}/api/local-image?${params}`, {
+            headers: { Range: "bytes=1-2" },
+          });
+          expect(response.status).toBe(206);
+          expect(response.headers.get("content-type")).toContain(mime);
+          expect(response.headers.get("content-range")).toBe("bytes 1-2/4");
+          expect(Buffer.from(await response.arrayBuffer())).toEqual(bytes.subarray(1, 3));
+        }
+      },
+    );
+  });
+
   it("serves an allowlisted workspace image and signals downloads via Content-Disposition", async () => {
     const workspace = makeTempDir("synara-effect-image-workspace-");
     writeFileSync(path.join(workspace, ".git"), "gitdir: .git");

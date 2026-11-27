@@ -1,8 +1,9 @@
 # Release Checklist
 
 The [Sona desktop installer](./electrobun.md#standalone-sona-installer-apple-silicon-mac)
-builds locally with `bun run dist:desktop`. This checklist covers the upstream
-Synara Electron publication workflow.
+builds locally with `bun run dist:desktop`. Follow that guide for Sona's DMG and
+Electrobun update feed. This checklist covers the upstream Synara Electron
+publication workflow.
 
 This document covers publishing desktop releases from one tag and targeted
 build-only diagnosis. An ordinary release uses one publication run after its

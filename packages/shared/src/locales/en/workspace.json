@@ -407,6 +407,7 @@
   "archive": "Archive ({{value0}})",
   "changeProjectPath2": "Change project path…",
   "commandIsRequired": "Command is required.",
+  "filePreview_videoPlaybackFailed": "Couldn’t play this recording. Check that the file is available and uses a supported video codec.",
   "filePreview_couldNotReadFile": "Could not read file.",
   "searchPalette_enterFolderPath": "Enter a folder path.",
   "searchPalette_enterToAddProject": "Enter to add project",

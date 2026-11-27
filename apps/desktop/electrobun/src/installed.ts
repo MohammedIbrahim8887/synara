@@ -10,9 +10,10 @@ import { registerElectrobunExternalLinks } from "../../src/electrobunExternalLin
 
 import { createDesktopCompanion } from "./desktopCompanion";
 import { installApplicationMenu } from "./applicationMenu";
+import { checkForSonaUpdates } from "./updates";
 
 try {
-  installApplicationMenu();
+  installApplicationMenu(() => void checkForSonaUpdates());
   const runtime = path.join(PATHS.RESOURCES_FOLDER, "app", "runtime");
   const home =
     process.env.SONA_HOME ?? process.env.SONA_PREVIEW_HOME ?? path.join(homedir(), ".sona");

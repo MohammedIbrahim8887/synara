@@ -134,7 +134,7 @@ export const DockExplorerPane = function DockExplorerPane(props: {
         <WorkspaceFilePreview
           workspaceRoot={props.workspaceRoot}
           filePath={selectedFilePath}
-          liveRevalidationEnabled={props.isVisible}
+          isVisible={props.isVisible}
           editable
           emptyState={
             <PanelStateMessage density="compact" fill="flex">

@@ -25,7 +25,7 @@ export function DockFilePane(props: {
     <WorkspaceFilePreview
       workspaceRoot={props.workspaceRoot}
       filePath={props.filePath}
-      liveRevalidationEnabled={props.isVisible}
+      isVisible={props.isVisible}
       markdownPreviewDefault
       emptyState={
         <PanelStateMessage density="compact" fill="flex">

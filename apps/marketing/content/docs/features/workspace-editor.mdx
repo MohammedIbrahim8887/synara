@@ -13,6 +13,10 @@ Changes autosave after a 400 ms pause. **Saving...**, **Unsaved changes**, and *
 
 Switching files, closing an editor, or navigating to another task first attempts to save pending edits. If a save fails, Synara keeps the draft and blocks navigation that would leave it behind. A browser reload or close can show an unsaved-changes warning while a dirty buffer remains. A retained draft is not a guarantee of recovery after a process crash, so resolve visible errors before quitting.
 
+## Review a recording
+
+Click a recording linked in chat or select it in the Explorer to open the video player. Use its controls to play, pause, seek, or enter fullscreen. MP4, WebM, MOV, M4V, and Ogg video files can open here. Playback depends on the codecs supported by your browser or desktop app.
+
 ## Resolve a save conflict
 
 Background file changes refresh clean previews but do not silently replace unsaved edits. If the file on disk changed since your buffer was read, autosave stops and shows a conflict.

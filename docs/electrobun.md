@@ -1,6 +1,6 @@
 # Electrobun migration status
 
-Sona 0.1.1 ships as a standalone Electrobun 2.0.6 app on Apple Silicon Macs.
+Sona 0.1.2 ships as a standalone Electrobun 2.0.6 app on Apple Silicon Macs.
 The upstream Synara desktop uses Electron. Electrobun's isolated qualification
 target tracks native parity for the upstream launcher and publication workflow.
 
@@ -124,7 +124,7 @@ Authorization URLs are never logged.
 
 ## Standalone Sona installer (Apple Silicon Mac)
 
-With Node 24, the pinned Bun, and Hutch available on `PATH`, run:
+With Node 24, the pinned Bun, Hutch, and `zstd` available on `PATH`, run:
 
 ```sh
 bun run dist:desktop
@@ -132,7 +132,7 @@ bun run dist:desktop
 
 This builds the production web client and backend, stages the installed production
 dependency graph (including the repository's patches), bundles Node and CEF, and
-creates `release/sona/Sona-0.1.1-macos-arm64.dmg`, its SHA-256 checksum, and a
+creates `release/sona/Sona-0.1.2-macos-arm64.dmg`, its SHA-256 checksum, and a
 standalone `Sona.app`. Open the DMG, drag Sona to Applications, then open Sona.
 No checkout, separately installed Node,
 or development server is required. Provider CLIs, accounts, and external tools
@@ -145,13 +145,28 @@ set `SONA_BROWSER_EXECUTABLE` to the browser executable before launching Sona.
 
 The bundle uses `dev.sona.desktop` in Electrobun's stable channel and reuses
 the installed Sona preview's backend data in `~/.sona`. Quit the preview before
-opening Sona 0.1.1. macOS may prompt again for microphone access under the new
-bundle identity. The installer has no update feed. A stored loopback port
+opening Sona 0.1.2. macOS may prompt again for microphone access under the new
+bundle identity. A stored loopback port
 keeps browser preferences stable across launches; a concurrent instance is refused.
 The backend uses its existing stdin parent-lifetime lease and the renderer uses
 the existing authenticated pairing bootstrap. Set `SONA_HOME` in the app's
 environment to a short path such as one created by `mktemp -d /tmp/sona-smoke.XXXXXX`
 for local smoke tests. The browser host uses a Unix socket under that directory.
+
+### Updates and release assets
+
+Install 0.1.2 from the DMG once to enable in-app updates. In an installed copy,
+choose **Sona → Check for Updates…** to check for a newer stable build.
+Approve the download, then choose **Install and Restart** when it is ready.
+Keep Sona in a writable Applications folder for the updater to replace the bundle.
+
+The installer build also outputs `stable-macos-arm64-update-v2.json` and the
+versioned `stable-macos-arm64-Sona-<version>.app.tar.zst`. The manifest records
+the size and SHA-256 of the uncompressed tar containing the same app as the DMG.
+For each release, update the version in `scripts/build-sona-installer.ts` and
+attach the DMG, its checksum, the update archive, and the manifest to the same
+GitHub release. Publish it as Latest after all four assets are uploaded and
+verified. Installed Sona versions use that repository's Latest download URLs.
 
 This local build uses ad-hoc signing and has no Apple notarization. Windows, Intel Mac,
 and Linux installers are not produced by this command. Native Electron-only

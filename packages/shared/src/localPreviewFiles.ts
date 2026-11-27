@@ -2,8 +2,7 @@
 // Purpose: Single source of truth for the /api/local-image route shape consumed by
 //          both the server (HTTP route + filesystem allowlist) and the web client
 //          (URL builder + markdown image source detection). The route serves every
-//          allowlisted preview file: images (rendered via <img>) and PDFs (rendered
-//          by the browser's built-in viewer in an <iframe>).
+//          allowlisted image, PDF, and video files.
 // Layer: Shared utility (no runtime dependencies)
 // Exports: route path, preview-file extension allowlists, and helper predicates
 //          derived from them.
@@ -50,11 +49,28 @@ export function isSupportedLocalPdfPath(filePath: string): boolean {
   return lowerCaseExtensionOf(filePath) === SUPPORTED_LOCAL_PDF_EXTENSION;
 }
 
+const localVideoExtensions: ReadonlySet<string> = new Set([
+  ".mp4",
+  ".m4v",
+  ".webm",
+  ".mov",
+  ".ogv",
+]);
+
+export function isSupportedLocalVideoPath(filePath: string): boolean {
+  const extension = lowerCaseExtensionOf(filePath);
+  return extension !== null && localVideoExtensions.has(extension);
+}
+
 // Full allowlist for the /api/local-image serving route. Markdown image source
 // detection (below) intentionally stays image-only: a `.pdf` link in chat
 // markdown must never be inlined as an <img>.
 export function isSupportedLocalPreviewFilePath(filePath: string): boolean {
-  return isSupportedLocalImagePath(filePath) || isSupportedLocalPdfPath(filePath);
+  return (
+    isSupportedLocalImagePath(filePath) ||
+    isSupportedLocalPdfPath(filePath) ||
+    isSupportedLocalVideoPath(filePath)
+  );
 }
 
 // Built from the canonical extensions list so the web regex never drifts from the

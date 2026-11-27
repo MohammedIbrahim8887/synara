@@ -1,5 +1,7 @@
-// Builds the local Sona stable installer without publishing update artifacts.
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+// Builds the Sona stable installer and its matching Electrobun update artifacts.
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnProcessSync } from "@synara/shared/processRuntime";
@@ -12,7 +14,15 @@ if (process.platform !== "darwin" || process.arch !== "arm64" || process.version
   );
 }
 const root = path.resolve(import.meta.dirname, "..");
-const version = "0.1.1";
+const version = "0.1.2";
+const updateBaseUrl = "https://github.com/MohammedIbrahim8887/synara/releases/latest/download";
+const updatePrefix = "stable-macos-arm64";
+
+async function sha256(filePath: string): Promise<string> {
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(filePath)) hash.update(chunk);
+  return hash.digest("hex");
+}
 const stage = await mkdtemp(path.join(tmpdir(), "sona-installer-"));
 const env = { ...process.env };
 for (const key of Object.keys(env)) {
@@ -86,7 +96,7 @@ await writeFile(
         },
       },
       runtime: { exitOnLastWindowClosed: false },
-      release: { generatePatch: false },
+      release: { baseUrl: updateBaseUrl, generatePatch: false },
     },
     null,
     2,
@@ -155,11 +165,42 @@ await cp(app, path.join(output, "Sona.app"), {
   recursive: true,
   verbatimSymlinks: true,
 });
-const { createHash } = await import("node:crypto");
-await writeFile(
-  `${dmg}.sha256`,
-  `${createHash("sha256")
-    .update(await readFile(dmg))
-    .digest("hex")}  ${path.basename(dmg)}\n`,
+// Archive the signed, complete bundle. Hutch's initial archive only contains
+// the shell because the runtime and final plist are staged after extraction.
+const tar = path.join(stage, "Sona.app.tar");
+run("tar", ["-cf", tar, "-C", imageRoot, "Sona.app"], stage);
+const tarSha256 = await sha256(tar);
+const { size: tarSize } = await stat(tar);
+const artifact = `${updatePrefix}-Sona-${version}.app.tar.zst`;
+run("zstd", ["-f", "-T0", "--rm", tar, "-o", path.join(output, artifact)], stage);
+const { identifier, channel, hash, baseUrl } = JSON.parse(
+  await readFile(path.join(app, "Contents/Resources/version.json"), "utf8"),
 );
+if (
+  identifier !== SONA_PRODUCTION_BUNDLE_ID ||
+  channel !== "stable" ||
+  baseUrl !== updateBaseUrl ||
+  typeof hash !== "string" ||
+  !hash
+) {
+  throw new Error("Electrobun bundle does not match the Sona update feed.");
+}
+await writeFile(
+  path.join(output, `${updatePrefix}-update-v2.json`),
+  JSON.stringify(
+    {
+      schemaVersion: 1,
+      identifier,
+      channel,
+      version,
+      hash,
+      platform: "macos",
+      arch: "arm64",
+      artifact: { file: artifact, tarSha256, tarSize },
+    },
+    null,
+    2,
+  ) + "\n",
+);
+await writeFile(`${dmg}.sha256`, `${await sha256(dmg)}  ${path.basename(dmg)}\n`);
 console.log(`Installer: ${dmg}\nApp: ${path.join(output, "Sona.app")}\nStaging: ${stage}`);
