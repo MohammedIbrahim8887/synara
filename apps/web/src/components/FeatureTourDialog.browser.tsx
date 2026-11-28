@@ -92,8 +92,6 @@ it("walks the tour in order, remembers dismissal per installation, and replays a
   await expect
     .element(page.getByRole("dialog", { name: "Start a chat with any agent" }))
     .toBeVisible();
-  await page.getByRole("button", { name: "Show Start the day in Inbox" }).click();
-  await expect.element(page.getByRole("dialog", { name: "Start the day in Inbox" })).toBeVisible();
   await page.getByRole("button", { name: "Show Review pull requests and issues" }).click();
   await expect
     .element(page.getByRole("dialog", { name: "Review pull requests and issues" }))
@@ -129,13 +127,13 @@ it("skips controls in a collapsed sidebar or under the rail and rings the visibl
         {anchor("newThread")}
       </div>
       {/* Its controls near the edge end up under the rail. */}
-      <div style={{ position: "fixed", left: 0, top: 100 }}>{anchor("tasks")}</div>
+      <div style={{ position: "fixed", left: 0, top: 100 }}>{anchor("pullRequests")}</div>
       <div
         style={{ position: "fixed", left: 0, top: 80, width: 60, height: 80, background: "white" }}
       />
       <div style={{ position: "fixed", left: 200, top: 200 }}>
         {anchor("activity")}
-        {anchor("inbox")}
+        {anchor("pullRequests")}
       </div>
       <FeatureTourDialog />
     </>,
@@ -145,7 +143,9 @@ it("skips controls in a collapsed sidebar or under the rail and rings the visibl
   expect(tour.element().getAttribute("data-tour-side")).toBe("right");
   expect(page.getByRole("button", { name: /^Show / }).all()).toHaveLength(2);
   await page.getByRole("button", { name: "Next", exact: true }).click();
-  await expect.element(page.getByRole("dialog", { name: "Start the day in Inbox" })).toBeVisible();
+  await expect
+    .element(page.getByRole("dialog", { name: "Review pull requests and issues" }))
+    .toBeVisible();
 });
 
 it("announces again when the browser connects to a different installation", async () => {
@@ -293,9 +293,7 @@ it("does not jump ahead of a slow AppSnap probe and then waits for its dismissal
   await new Promise((resolve) => setTimeout(resolve, 500));
   expect(document.querySelectorAll('[role="dialog"]').length).toBe(0);
   resolveProbe({ supported: true });
-  await expect
-    .element(page.getByRole("dialog", { name: "Synara AppSnaps are live!" }))
-    .toBeVisible();
+  await expect.element(page.getByRole("dialog", { name: "Sona AppSnaps are live!" })).toBeVisible();
   await page.getByRole("button", { name: "Not now" }).click();
   await expect
     .element(page.getByRole("dialog", { name: "Start a chat with any agent" }))

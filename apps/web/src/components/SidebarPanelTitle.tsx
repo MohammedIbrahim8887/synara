@@ -5,6 +5,12 @@
 
 import type { ReactNode } from "react";
 
+import { useTranslation } from "~/i18n";
+import { XIcon } from "~/lib/icons";
+
+import { SidebarIconButton } from "./SidebarIconButton";
+import { useIsInMobileSidebarDrawer, useSidebar } from "./ui/sidebar";
+
 /** Panel title type: display face at the title size (titles may use a fixed size). */
 export const SIDEBAR_PANEL_TITLE_CLASS_NAME =
   "font-display min-w-0 truncate text-[17px] text-foreground";
@@ -24,7 +30,34 @@ export function SidebarPanelTitle({
       <Heading className="flex h-8 min-w-0 items-center px-2.5">
         <span className={SIDEBAR_PANEL_TITLE_CLASS_NAME}>{title}</span>
       </Heading>
-      {children ? <div className="ml-auto flex items-center gap-1.5">{children}</div> : null}
+      <div className="ml-auto flex items-center gap-1.5">
+        {children}
+        <SidebarMobileCloseButton />
+      </div>
     </div>
+  );
+}
+
+/**
+ * Closes the phone drawer, which covers nearly the whole screen and leaves almost no backdrop
+ * to tap. Renders nothing outside the mobile drawer, so desktop sidebars are unchanged.
+ */
+export function SidebarMobileCloseButton() {
+  const { t } = useTranslation();
+  const inDrawer = useIsInMobileSidebarDrawer();
+  if (!inDrawer) return null;
+  return <SidebarMobileCloseButtonInner label={t("workspace:closeSidebar")} />;
+}
+
+function SidebarMobileCloseButtonInner({ label }: { label: string }) {
+  const { setOpenMobile } = useSidebar();
+  return (
+    <SidebarIconButton
+      icon={XIcon}
+      label={label}
+      glyph="leading"
+      size="header"
+      onClick={() => setOpenMobile(false)}
+    />
   );
 }

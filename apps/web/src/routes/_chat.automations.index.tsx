@@ -47,6 +47,9 @@ function AutomationsRouteView() {
       >
         <RouteSurfaceHeader>
           <div className="min-w-0 flex-1" />
+          <Button size="sm" variant="ghost" onClick={() => void navigate({ to: "/flows" })}>
+            {t("automation:flows_title")}
+          </Button>
           <div className="flex shrink-0 items-center gap-1 [-webkit-app-region:no-drag]">
             <Button
               type="button"

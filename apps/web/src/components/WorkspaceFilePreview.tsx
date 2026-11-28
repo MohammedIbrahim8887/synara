@@ -1,7 +1,7 @@
 import { useTranslation } from "~/i18n";
 // FILE: WorkspaceFilePreview.tsx
 // Purpose: Shared single-file preview (code with syntax highlighting, parsed
-//          markdown, images, PDFs) for workspace files plus absolute local
+//          markdown, images, PDFs, videos) for workspace files plus absolute local
 //          file references reused by editor and right-dock panes.
 // Layer: Web chat presentation component
 // Exports: WorkspaceFilePreview, isMarkdownPreviewablePath
@@ -10,6 +10,7 @@ import type { ProjectFileChangeEvent, ProjectReadFileResult } from "@synara/cont
 import {
   isSupportedLocalImagePath,
   isSupportedLocalPdfPath,
+  isSupportedLocalVideoPath,
   lowerCaseExtensionOf,
 } from "@synara/shared/localPreviewFiles";
 import {
@@ -77,6 +78,8 @@ import { useFileLineCommenting } from "./chat/useFileLineCommenting";
 import { WorkspaceFilePreviewHeader } from "./chat/WorkspaceFilePreviewHeader";
 import { TranscriptSelectionAction } from "./chat/TranscriptSelectionAction";
 import { useCodeSelectionAction } from "./chat/useCodeSelectionAction";
+import { VideoFilePreview } from "./VideoFilePreview";
+import { buildLocalImageUrl } from "~/lib/localImageUrls";
 import { LocalImagePreview } from "./LocalImagePreview";
 import { PdfFilePreview } from "./PdfFilePreview";
 import { Skeleton } from "./ui/skeleton";
@@ -440,7 +443,7 @@ export interface WorkspaceFilePreviewProps {
   workspaceRoot: string | null;
   /**
    * Workspace-relative path of the previewed file. Binary previews (images,
-   * PDFs) may instead be absolute paths outside the workspace — e.g. a
+   * PDFs, videos) may instead be absolute paths outside the workspace — e.g. a
    * session's scratch directory — served by the local-image route, which never
    * touch the workspace-relative file-read RPC.
    */
@@ -457,8 +460,8 @@ export interface WorkspaceFilePreviewProps {
   onMarkdownPreviewChange?: (rendered: boolean) => void;
   /** Enables guarded editing for complete, supported files inside the workspace. */
   editable?: boolean;
-  /** Keeps the file watcher bounded to a currently visible preview surface. */
-  liveRevalidationEnabled?: boolean;
+  /** Hidden panes suspend file watching and pause video playback. */
+  isVisible?: boolean;
   /** Shown when no file is selected yet. */
   emptyState?: ReactNode;
   onReferenceInChat?: ((reference: ChatFileReference) => void) | undefined;
@@ -470,7 +473,7 @@ export interface WorkspaceFilePreviewProps {
 export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
   const { t } = useTranslation();
 
-  const liveRevalidationEnabled = props.liveRevalidationEnabled ?? true;
+  const isVisible = props.isVisible ?? true;
   const { resolvedTheme } = useTheme();
   const diffThemeName = resolveDiffThemeName(resolvedTheme);
   const contentsRef = useRef<HTMLDivElement>(null);
@@ -506,10 +509,12 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
   const markdownPreviewDefault = props.markdownPreviewDefault ?? false;
   const fileIsImage = filePath !== null && isSupportedLocalImagePath(filePath);
   const fileIsPdf = filePath !== null && isSupportedLocalPdfPath(filePath);
+  const fileIsVideo = filePath !== null && isSupportedLocalVideoPath(filePath);
+  const fileIsBinary = fileIsImage || fileIsPdf || fileIsVideo;
   const fileIsLocalAbsolute = filePath !== null && isLocalAbsolutePath(filePath);
   const fileIsWorkspaceRelative = filePath !== null && isWorkspaceRelativePathSafe(filePath);
   const fileIsScratchBinaryPreview =
-    filePath !== null && (fileIsImage || fileIsPdf) && isScratchWorkspacePath(filePath);
+    filePath !== null && fileIsBinary && isScratchWorkspacePath(filePath);
   const fileNeedsLocalPreviewGrant =
     filePath !== null && fileIsLocalAbsolute && !fileIsScratchBinaryPreview;
   const fileIsMarkdown = filePath !== null && isMarkdownPreviewablePath(filePath);
@@ -542,13 +547,12 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
       cwd: props.workspaceRoot,
       relativePath: filePath,
       previewGrant: localPreviewGrant,
-      // Images and PDFs are binary: they stream through the local-image HTTP
+      // Binary previews stream over HTTP through the local-image
       // route instead of the text file-read RPC.
       enabled:
-        liveRevalidationEnabled &&
+        isVisible &&
         filePath !== null &&
-        !fileIsImage &&
-        !fileIsPdf &&
+        !fileIsBinary &&
         (fileNeedsLocalPreviewGrant ? localPreviewGrant !== null : props.workspaceRoot !== null),
     }),
   );
@@ -558,7 +562,7 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
       : null;
   const watchedWorkspaceRelativePath =
     resolvedWorkspaceRelativePath ??
-    ((fileIsImage || fileIsPdf) &&
+    (fileIsBinary &&
     workspaceRoot &&
     requestedFilePath &&
     isWorkspaceRelativePathSafe(requestedFilePath)
@@ -577,7 +581,7 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
       // them stale until the window regains focus. Only active variants are
       // re-read, so an idle workspace costs nothing here.
       void refreshGitAfterFileWrite(queryClient, workspaceRoot);
-      if (fileIsImage || fileIsPdf) {
+      if (fileIsBinary) {
         setBinaryPreviewReloading(true);
         setBinaryPreviewRevision((current) => current + 1);
       }
@@ -589,8 +593,7 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
       }
     },
     [
-      fileIsImage,
-      fileIsPdf,
+      fileIsBinary,
       queryClient,
       relocationRequestKey,
       requestedFilePath,
@@ -601,7 +604,7 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
   useProjectFileChangeSubscription({
     cwd: workspaceRoot,
     relativePath: watchedWorkspaceRelativePath,
-    enabled: liveRevalidationEnabled && watchedWorkspaceRelativePath !== null,
+    enabled: isVisible && watchedWorkspaceRelativePath !== null,
     onChange: handleWatchedFileChange,
   });
 
@@ -667,7 +670,7 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
   const editor = useWorkspaceFileEditorBuffer({
     cwd: workspaceRoot,
     filePath,
-    enabled: Boolean(props.editable && fileIsWorkspaceRelative),
+    enabled: Boolean(props.editable && fileIsWorkspaceRelative && !fileIsBinary),
     file: fileQuery.data,
   });
   const editableDocument =
@@ -706,7 +709,7 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
 
   const handleFileReload = useCallback(() => {
     if (!filePath) return;
-    if (fileIsImage || fileIsPdf) {
+    if (fileIsBinary) {
       setBinaryPreviewReloading(true);
       setBinaryPreviewRevision((current) => current + 1);
       return;
@@ -715,7 +718,7 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
       cwd: workspaceRoot,
       relativePath: filePath,
     });
-  }, [fileIsImage, fileIsPdf, filePath, queryClient, workspaceRoot]);
+  }, [fileIsBinary, filePath, queryClient, workspaceRoot]);
 
   const handleEditBufferReload = editor.reloadFromDisk;
   // Wait for the file read before asking for the working-tree diff: while the
@@ -725,8 +728,7 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
     props.workspaceRoot !== null &&
     resolvedWorkspaceRelativePath !== null &&
     fileQuery.data !== undefined &&
-    !fileIsImage &&
-    !fileIsPdf &&
+    !fileIsBinary &&
     !showMarkdownPreview &&
     editableDocument === null;
   const workingTreeDiffQuery = useQuery(
@@ -898,8 +900,7 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
   const editFile =
     onEditFile &&
     canToggleTasks &&
-    !fileIsImage &&
-    !fileIsPdf &&
+    !fileIsBinary &&
     filePath !== null &&
     fileQuery.data !== undefined &&
     resolveWorkspaceFileEditorReadOnlyReason(fileQuery.data) === null
@@ -982,7 +983,9 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
         onMarkdownPreviewChange={handleMarkdownPreviewChange}
         onReferenceInChat={onReferenceInChat}
         onAskWhyInChat={onAskWhyInChat}
-        contentsForCopy={fileIsImage || fileQuery.data === undefined ? null : displayedFileContents}
+        contentsForCopy={
+          fileIsBinary || fileQuery.data === undefined ? null : displayedFileContents
+        }
         truncated={fileQuery.data?.truncated ?? false}
         onEditFile={editFile}
         dirty={editBufferDirty}
@@ -1000,8 +1003,8 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
         saving={activeEditBuffer?.saving ?? false}
         onSave={activeEditBuffer ? editor.save : undefined}
         readOnlyReason={readOnlyReason}
-        reloading={fileIsImage || fileIsPdf ? binaryPreviewReloading : fileQuery.isFetching}
-        onReload={workspaceRoot && filePath ? handleFileReload : undefined}
+        reloading={fileIsBinary ? binaryPreviewReloading : fileQuery.isFetching}
+        onReload={(workspaceRoot || fileIsVideo) && filePath ? handleFileReload : undefined}
       />
       {activeEditBuffer?.error ? (
         <div
@@ -1058,6 +1061,29 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
       ) : null}
       {locatingOutOfRootFile ? (
         <FilePreviewLoadingState />
+      ) : fileIsVideo ? (
+        <VideoFilePreview
+          key={JSON.stringify([workspaceRoot, filePath, binaryPreviewRevision])}
+          url={buildLocalImageUrl({
+            src: filePath,
+            canonicalPath: filePath,
+            cwd: workspaceRoot ?? undefined,
+            grant: localPreviewGrant,
+            cacheKey: binaryPreviewRevision,
+          })}
+          playableUrl={buildLocalImageUrl({
+            src: filePath,
+            canonicalPath: filePath,
+            cwd: workspaceRoot ?? undefined,
+            grant: localPreviewGrant,
+            cacheKey: binaryPreviewRevision,
+            playable: "webm",
+          })}
+          fileName={basenameOfPath(filePath)}
+          isVisible={isVisible}
+          onReady={handleBinaryPreviewReady}
+          onError={handleBinaryPreviewError}
+        />
       ) : fileIsImage ? (
         <div
           className="editor-file-viewer min-h-0 flex-1 overflow-auto"

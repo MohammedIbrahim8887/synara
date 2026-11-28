@@ -263,6 +263,76 @@ layer("AutomationRepository", (it) => {
       assert.isNull(loaded.value.proposalState);
       assert.strictEqual(loaded.value.notificationPolicy, "all");
       assert.strictEqual(loaded.value.heartbeatCooldownSeconds, 60);
+      assert.deepStrictEqual(loaded.value.linkedTools, []);
+    }),
+  );
+
+  it.effect("round-trips linked tools and stores an empty list as NULL", () =>
+    Effect.gen(function* () {
+      const repository = yield* AutomationRepository;
+      const sql = yield* SqlClient.SqlClient;
+      yield* runMigrations();
+      const linear = { serverName: "linear_connector", name: "Linear" };
+      const notion = { serverName: "notion_connector", name: "Notion" };
+      const readColumn = () =>
+        sql<{ readonly value: string | null }>`
+          SELECT linked_tools_json AS value FROM automation_definitions
+          WHERE automation_id = 'automation-linked-tools'`;
+
+      const created = yield* repository.createDefinition({
+        id: AutomationId.makeUnsafe("automation-linked-tools"),
+        input: { ...createInputForProject("project-linked-tools"), linkedTools: [linear, notion] },
+        now: "2026-06-16T10:00:00.000Z",
+      });
+      assert.deepStrictEqual(created.linkedTools, [linear, notion]);
+      assert.deepStrictEqual(JSON.parse((yield* readColumn())[0]!.value!), [linear, notion]);
+      const loaded = Option.getOrThrow(yield* repository.getDefinitionById({ id: created.id }));
+      assert.deepStrictEqual(loaded.linkedTools, [linear, notion]);
+      const listed = yield* repository.list({ includeArchived: false });
+      assert.deepStrictEqual(
+        listed.definitions.find((definition) => definition.id === created.id)?.linkedTools,
+        [linear, notion],
+      );
+
+      const cleared = yield* repository.saveDefinition({
+        definition: { ...loaded, linkedTools: [], updatedAt: "2026-06-16T10:01:00.000Z" },
+        expectedUpdatedAt: loaded.updatedAt,
+      });
+      assert.isTrue(Option.isSome(cleared));
+      assert.isNull((yield* readColumn())[0]!.value);
+      const reloaded = Option.getOrThrow(yield* repository.getDefinitionById({ id: created.id }));
+      assert.deepStrictEqual(reloaded.linkedTools, []);
+    }),
+  );
+
+  it.effect("reads malformed linked tools as none and keeps only valid entries", () =>
+    Effect.gen(function* () {
+      const repository = yield* AutomationRepository;
+      const sql = yield* SqlClient.SqlClient;
+      yield* runMigrations();
+      const linear = { serverName: "linear_connector", name: "Linear" };
+      const cases = [
+        ["automation-linked-malformed", "{not json", []],
+        ["automation-linked-object", '{"serverName":"linear_connector"}', []],
+        [
+          "automation-linked-mixed",
+          JSON.stringify([linear, { serverName: "Bad Name", name: "Bad" }, linear, 7]),
+          [linear],
+        ],
+      ] as const;
+      for (const [id, column, expected] of cases) {
+        yield* repository.createDefinition({
+          id: AutomationId.makeUnsafe(id),
+          input: createInputForProject("project-linked-malformed"),
+          now: "2026-06-16T10:00:00.000Z",
+        });
+        yield* sql`UPDATE automation_definitions SET linked_tools_json = ${column}
+          WHERE automation_id = ${id}`;
+        const loaded = Option.getOrThrow(
+          yield* repository.getDefinitionById({ id: AutomationId.makeUnsafe(id) }),
+        );
+        assert.deepStrictEqual(loaded.linkedTools, expected);
+      }
     }),
   );
 

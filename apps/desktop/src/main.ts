@@ -1,4 +1,5 @@
 import "./httpRuntime";
+import { getSafeExternalUrl } from "./externalUrl";
 import {
   attachDesktopUpdateControl,
   DESKTOP_UPDATE_IPC_ENV,
@@ -311,6 +312,7 @@ import {
   sendBrowserCopyLink,
   sendBrowserState,
 } from "./browserIpc";
+import { DesktopBrowserAutomationHost } from "./browserAutomation/desktopBrowserAutomationHost";
 import {
   BrowserHostPipeServer,
   SYNARA_BROWSER_HOST_PIPE_PATH,
@@ -739,14 +741,16 @@ async function ensureBrowserHostPipeServer(): Promise<void> {
   if (browserHostPipeServer || !SYNARA_BROWSER_HOST_PIPE_PATH) {
     return;
   }
-  const server = new BrowserHostPipeServer(browserManager, {
-    vault: browserVault,
-    vaultCapture: browserVaultCapture,
+  const server = new BrowserHostPipeServer({
+    automationHost: new DesktopBrowserAutomationHost(browserManager, {
+      vault: browserVault,
+      vaultCapture: browserVaultCapture,
+      requestOpenPanel: (threadId) => {
+        if (!threadId) return;
+        mainWindow?.webContents.send(IPC.browser.requestOpenPanel, { threadId });
+      },
+    }),
     capability: DESKTOP_BROWSER_HOST_CAPABILITY,
-    requestOpenPanel: (threadId) => {
-      if (!threadId) return;
-      mainWindow?.webContents.send(IPC.browser.requestOpenPanel, { threadId });
-    },
   });
   await server.start();
   browserHostPipeServer = server;
@@ -805,25 +809,6 @@ function formatErrorMessage(error: unknown): string {
     return error.message;
   }
   return String(error);
-}
-
-function getSafeExternalUrl(rawUrl: unknown): string | null {
-  if (typeof rawUrl !== "string" || rawUrl.length === 0) {
-    return null;
-  }
-
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(rawUrl);
-  } catch {
-    return null;
-  }
-
-  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
-    return null;
-  }
-
-  return parsedUrl.toString();
 }
 
 function getSafeTheme(rawTheme: unknown): DesktopTheme | null {

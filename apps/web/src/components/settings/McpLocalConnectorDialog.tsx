@@ -175,7 +175,7 @@ export function McpLocalConnectorDialog(props: {
                 </label>
                 <p className="text-ui-sm text-muted-foreground">
                   Adding this server runs the exact command and arguments above. Environment values
-                  are saved in Synara’s secrets store.
+                  are saved in Sona’s secrets store.
                 </p>
               </>
             )}

@@ -4,7 +4,7 @@
 // Layer: Settings UI components
 // Exports: PairingQrCode
 
-import { SynaraLogo } from "@synara/profile-ui/logo";
+import { SynaraLogo } from "~/components/SonaLogo";
 import { useMemo } from "react";
 import { encode, QrCodeDataType } from "uqr";
 
@@ -59,19 +59,19 @@ export function PairingQrCode({
 }) {
   const qr = useMemo(() => pairingQrGeometry(value), [value]);
   // The mark sits inside the cleared square with a module of breathing room.
-  const logoPixels = ((qr.logoSpan - 1.5) / qr.size) * pixelSize;
+  const logoPercent = ((qr.logoSpan - 1.5) / qr.size) * 100;
   return (
     <div
       role="img"
       aria-label={label}
-      className="relative rounded-[22px] bg-white p-3.5 ring-1 ring-black/8"
+      className="relative w-fit max-w-full rounded-[22px] bg-white p-3.5 ring-1 ring-black/8"
     >
       <svg
         aria-hidden
         viewBox={`0 0 ${qr.size} ${qr.size}`}
         width={pixelSize}
         height={pixelSize}
-        className="block"
+        className="block h-auto max-w-full"
       >
         <path
           d={qr.dots}
@@ -98,10 +98,9 @@ export function PairingQrCode({
       </svg>
       <span
         aria-hidden
-        className="absolute inset-0 m-auto flex items-center justify-center rounded-[28%] text-white"
-        style={{ width: logoPixels, height: logoPixels, backgroundColor: INK }}
+        className="pointer-events-none absolute inset-3.5 flex items-center justify-center"
       >
-        <SynaraLogo className="w-1/2 text-white" />
+        <SynaraLogo style={{ width: `${logoPercent}%` }} />
       </span>
     </div>
   );

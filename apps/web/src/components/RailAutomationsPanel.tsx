@@ -12,7 +12,7 @@ import type { AutomationDefinition } from "@synara/contracts";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
 
 import { CentralIcon } from "~/lib/central-icons";
-import { AddPlusIcon } from "~/lib/icons";
+import { AddPlusIcon, WorkflowIcon } from "~/lib/icons";
 import { cn } from "~/lib/utils";
 import {
   AutomationCreateDialog,
@@ -149,6 +149,11 @@ export function RailAutomationsPanel({
       <SidebarPanelTitle title={t("automation:detail_breadcrumb")} />
       <SidebarGroup className="px-1.5 pt-1 pb-1.5">
         <SidebarMenu className="gap-0.5">
+          <SidebarPrimaryAction
+            icon={WorkflowIcon}
+            label={t("automation:flows_title")}
+            onClick={() => void navigate({ to: "/flows" })}
+          />
           <SidebarPrimaryAction
             icon={AddPlusIcon}
             label={t("automation:list_newAutomation")}

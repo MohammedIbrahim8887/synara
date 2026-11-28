@@ -4,12 +4,11 @@ import { describe, expect, it } from "vitest";
 import { isTasksRefusal, isTasksSurfaceEnabled, noteTasksRefusal } from "./tasksSurface";
 
 describe("tasksSurface", () => {
-  it("turns Tasks off for the session once the server refuses it", () => {
-    // Tests have no desktop protocol, so the build offers Tasks in Stable and Beta.
-    expect(isTasksSurfaceEnabled()).toBe(true);
+  it("keeps Tasks disabled before and after server refusals", () => {
+    expect(isTasksSurfaceEnabled()).toBe(false);
 
     expect(noteTasksRefusal(new Error("Socket closed"))).toBe(false);
-    expect(isTasksSurfaceEnabled()).toBe(true);
+    expect(isTasksSurfaceEnabled()).toBe(false);
 
     const refusal = {
       code: TASKS_UNAVAILABLE_ERROR_CODE,

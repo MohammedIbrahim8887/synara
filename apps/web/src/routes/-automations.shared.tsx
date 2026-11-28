@@ -33,6 +33,7 @@ import {
   ComposerPickerMenuSubPopup,
 } from "~/components/chat/ComposerPickerMenuPopup";
 import { ProviderModelPicker } from "~/components/chat/ProviderModelPicker";
+import { AutomationToolsPicker } from "~/components/automation/AutomationToolsPicker";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogPopup, DialogTitle } from "~/components/ui/dialog";
@@ -1215,7 +1216,7 @@ export function AutomationDialog({
               <span>{readExecutionContext()?.execution.label ?? "This computer"}</span>
             )}
           </div>
-          <p>This computer must stay awake with Synara running. Other computers can be closed.</p>
+          <p>This computer must stay awake with Sona running. Other computers can be closed.</p>
           {projects.length === 0 ? (
             <p>Add a project on this computer before creating an automation.</p>
           ) : null}
@@ -1424,6 +1425,12 @@ export function AutomationDialog({
                 ) : null}
               </ComposerPickerMenuPopup>
             </Menu>
+
+            <AutomationToolsPicker
+              value={form.linkedTools}
+              onChange={(linkedTools) => setField("linkedTools", linkedTools)}
+              triggerClassName={CHIP_CLASS}
+            />
 
             <Menu>
               <MenuTrigger

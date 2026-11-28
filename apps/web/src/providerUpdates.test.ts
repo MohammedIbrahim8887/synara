@@ -55,6 +55,7 @@ function serverSettings(overrides: Partial<ServerSettings["providers"]> = {}): S
   };
 
   return {
+    flows: [],
     autoResumeAfterUsageLimits: false,
     usageLimitRecoveryEpoch: 0,
     enableAssistantStreaming: false,

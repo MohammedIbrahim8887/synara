@@ -3,7 +3,7 @@
 // Layer: Web orchestration tests
 
 import { type ProjectId } from "@synara/contracts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { Project } from "../types";
 import {
@@ -134,3 +134,9 @@ describe("collectGroupProjectIds", () => {
     );
   });
 });
+
+// Exercise retained group algorithms independently of Sona's disabled product surface.
+vi.mock("../betaFeatures", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../betaFeatures")>()),
+  GROUPS_ON: true,
+}));

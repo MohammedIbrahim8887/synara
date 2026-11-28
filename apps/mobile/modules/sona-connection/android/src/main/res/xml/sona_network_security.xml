@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+  <!-- Every server must pass the QR certificate check, including certificates
+       otherwise trusted by Android. Never add system/user trust anchors here. -->
+  <base-config cleartextTrafficPermitted="false"><trust-anchors /></base-config>
+</network-security-config>

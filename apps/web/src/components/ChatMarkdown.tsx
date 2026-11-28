@@ -121,6 +121,7 @@ import {
   FindAwareShikiHtml,
 } from "./ChatMarkdownFind";
 import { useTranslation } from "~/i18n";
+import { VisualFenceBlock, visualFenceKind } from "./chat/VisualFenceBlock";
 
 const EXTERNAL_HTTP_HREF_PATTERN = /^https?:\/\//i;
 // Trailing `:line` / `:line:col` position suffix on a resolved file link. Kept on
@@ -1076,16 +1077,22 @@ function CodeBlockHeaderTitle({ fence }: { fence: CodeFenceInfo }) {
   return <span className="chat-markdown-codeblock__lang">{fence.language}</span>;
 }
 
-function MarkdownCodeBlock({
+export function MarkdownCodeBlock({
   code,
   fence,
   children,
   direction,
+  actions,
+  hideWrapToggle,
 }: {
   code: string;
   fence: CodeFenceInfo;
   children: ReactNode;
   direction?: "ltr" | undefined;
+  /** Extra header actions, e.g. the diagram/source toggle for rendered fences. */
+  actions?: ReactNode;
+  /** Rendered previews have no lines to wrap. */
+  hideWrapToggle?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -1123,18 +1130,21 @@ function MarkdownCodeBlock({
       <div className="chat-markdown-codeblock__header">
         <CodeBlockHeaderTitle fence={fence} />
         <div className="chat-markdown-codeblock__actions">
-          <IconButton
-            className="chat-markdown-codeblock__action"
-            onClick={toggleWrap}
-            title={wrap ? t("chat:disableSoftWrap") : t("chat:enableSoftWrap")}
-            label={wrap ? t("chat:disableSoftWrap") : t("chat:enableSoftWrap")}
-            aria-pressed={wrap}
-            data-active={wrap ? "true" : "false"}
-            size="icon-xs"
-            variant="ghost"
-          >
-            <TextWrapIcon className="size-3" />
-          </IconButton>
+          {actions}
+          {hideWrapToggle ? null : (
+            <IconButton
+              className="chat-markdown-codeblock__action"
+              onClick={toggleWrap}
+              title={wrap ? t("chat:disableSoftWrap") : t("chat:enableSoftWrap")}
+              label={wrap ? t("chat:disableSoftWrap") : t("chat:enableSoftWrap")}
+              aria-pressed={wrap}
+              data-active={wrap ? "true" : "false"}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <TextWrapIcon className="size-3" />
+            </IconButton>
+          )}
           <IconButton
             className="chat-markdown-codeblock__action"
             onClick={handleCopy}
@@ -1489,6 +1499,20 @@ const MARKDOWN_COMPONENTS: Components = {
         </FindAwareCodeFallback>
       </pre>
     );
+
+    // Agents draw diagrams and UI previews with these fences (see the visualize skill).
+    const visualKind = visualFenceKind(rawFenceInfo);
+    if (visualKind !== null && !isUserVariant) {
+      return (
+        <VisualFenceBlock
+          kind={visualKind}
+          code={code}
+          fence={fence}
+          isStreaming={isStreaming}
+          source={highlightedFallback}
+        />
+      );
+    }
 
     return (
       <MarkdownCodeBlock

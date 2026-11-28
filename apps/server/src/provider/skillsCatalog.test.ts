@@ -20,6 +20,7 @@ import {
   parseSkillFrontmatter,
 } from "./skillsCatalog.ts";
 import { pathIsWithin } from "./claudePluginSkills.ts";
+import { VISUALIZE_SKILL_NAME } from "@synara/shared/visualizeSkill";
 
 let root: string;
 let homeDir: string;
@@ -479,7 +480,12 @@ describe("discoverSkillsCatalog", () => {
       includeDuplicateOrigins: true,
     });
     expect(settingsCatalog.filter((skill) => skill.name === "reviewer")).toHaveLength(2);
-    expect(settingsCatalog.map((skill) => skill.scope).sort()).toEqual(["claude", "codex"]);
+    expect(
+      settingsCatalog
+        .filter((skill) => skill.name === "reviewer")
+        .map((skill) => skill.scope)
+        .sort(),
+    ).toEqual(["claude", "codex"]);
   });
 
   it("prefers the provider-native copy and falls back to Synara for that provider", async () => {
@@ -561,16 +567,19 @@ description: Direct Pi markdown skill
     await writeSkill(path.join(synaraBaseDir, "skills", "first"), "first", "First skill");
 
     const initial = await discoverSkillsCatalog({ homeDir, synaraBaseDir });
-    expect(initial.map((skill) => skill.name)).toEqual(["first"]);
+    // Sona's built-in skills are always present alongside the user's.
+    const userSkillNames = (skills: ReadonlyArray<{ name: string }>) =>
+      skills.map((skill) => skill.name).filter((name) => name !== VISUALIZE_SKILL_NAME);
+    expect(userSkillNames(initial)).toEqual(["first"]);
 
     // A skill added after the first scan is invisible to the cached entry...
     await writeSkill(path.join(synaraBaseDir, "skills", "second"), "second", "Second skill");
     const cached = await discoverSkillsCatalog({ homeDir, synaraBaseDir });
-    expect(cached.map((skill) => skill.name)).toEqual(["first"]);
+    expect(userSkillNames(cached)).toEqual(["first"]);
 
     // ...but forceReload bypasses the cache and refreshes it.
     const reloaded = await discoverSkillsCatalog({ homeDir, synaraBaseDir, forceReload: true });
-    expect(reloaded.map((skill) => skill.name).sort()).toEqual(["first", "second"]);
+    expect(userSkillNames(reloaded).sort()).toEqual(["first", "second"]);
   });
 
   it("includes project-level .synara skills when a cwd is provided", async () => {

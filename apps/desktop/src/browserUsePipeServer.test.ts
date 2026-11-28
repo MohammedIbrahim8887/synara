@@ -68,7 +68,7 @@ async function withPipeServer(
 ): Promise<void> {
   const directory = await mkdtemp(join(tmpdir(), "synara-browser-host-test-"));
   const pipePath = join(directory, "browser.sock");
-  const server = new BrowserHostPipeServer({} as never, {
+  const server = new BrowserHostPipeServer({
     pipePath,
     capability: TEST_CAPABILITY,
     ...(options.maxInFlightRequests === undefined
@@ -77,7 +77,7 @@ async function withPipeServer(
     ...(options.maxQueuedOutputBytes === undefined
       ? {}
       : { maxQueuedOutputBytes: options.maxQueuedOutputBytes }),
-    ...(options.automationHost ? { automationHost: options.automationHost as never } : {}),
+    automationHost: (options.automationHost ?? { executeTool: async () => ({}) }) as never,
   });
   await server.start();
   const socket = await connect(pipePath);
@@ -145,7 +145,7 @@ describe("canonical browser host pipe resolution", () => {
   it("rejects a non-private configured parent without changing its permissions", async () => {
     const directory = await mkdtemp(join(tmpdir(), "synara-browser-host-public-test-"));
     await chmod(directory, 0o755);
-    const server = new BrowserHostPipeServer({} as never, {
+    const server = new BrowserHostPipeServer({
       pipePath: join(directory, "browser.sock"),
       capability: TEST_CAPABILITY,
       automationHost: { executeTool: async () => ({}) } as never,
@@ -164,7 +164,7 @@ describe("canonical browser host RPC", () => {
   it("accepts every client in a maximum-size gateway batch", async () => {
     const directory = await mkdtemp(join(tmpdir(), "synara-browser-host-capacity-test-"));
     const pipePath = join(directory, "browser.sock");
-    const server = new BrowserHostPipeServer({} as never, {
+    const server = new BrowserHostPipeServer({
       pipePath,
       capability: TEST_CAPABILITY,
       automationHost: { executeTool: async () => ({}) } as never,

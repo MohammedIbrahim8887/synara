@@ -1,3 +1,4 @@
+import { SONA_CLOUD_ACCOUNT_ENABLED } from "@synara/shared/betaFeatures";
 import { requestLocalRemoteAccess, saveRemoteInvitation } from "./remotePairing/cli";
 import { accountApiIssuer, accountStateDirectory, readAccountFile } from "./accountAuth";
 import { startRemoteBillingPolicy } from "./remoteBillingPolicy";
@@ -64,6 +65,7 @@ import {
   SYNARA_DESKTOP_BUNDLE_ID_ENV,
 } from "@synara/shared/desktopIdentity";
 import { runBetaImportIfRequested } from "./betaImport";
+import { isSonaRelease } from "./buildVersion";
 import { startBetaUsageSnapshotJob } from "./betaUsageSnapshot";
 import { startHostUsageSnapshotJob } from "./hostUsageSnapshot";
 import { LATEST_MIGRATION_ID } from "./persistence/Migrations";
@@ -491,9 +493,11 @@ const makeServerProgram = (input: CliInput) =>
 
     const config = yield* ServerConfig;
     // Restore policy before opening HTTP; a restart never turns a known paid policy off.
-    const storedAccount = yield* Effect.promise(() =>
-      readAccountFile(accountStateDirectory(config.baseDir, config.devUrl)),
-    );
+    const storedAccount = SONA_CLOUD_ACCOUNT_ENABLED
+      ? yield* Effect.promise(() =>
+          readAccountFile(accountStateDirectory(config.baseDir, config.devUrl)),
+        )
+      : undefined;
     const billingAuthority =
       resolveConfiguredAccountUrl({ env: process.env }) ?? DEFAULT_ACCOUNT_URL;
     remoteSessions.setRemoteBillingEnforced(
@@ -501,8 +505,9 @@ const makeServerProgram = (input: CliInput) =>
         storedAccount.remoteBillingPolicy.enforced === true,
     );
     if (
-      config.remoteBillingPolicyRequired === true ||
-      !remoteConnectionsUnavailableReason(config.stateDir)
+      SONA_CLOUD_ACCOUNT_ENABLED &&
+      (config.remoteBillingPolicyRequired === true ||
+        !remoteConnectionsUnavailableReason(config.stateDir))
     ) {
       // Restore deployment policy before serving. The bounded public refresh runs asynchronously.
       const policy = yield* Effect.promise(() =>
@@ -533,7 +538,7 @@ const makeServerProgram = (input: CliInput) =>
     // Follows the credentials file for the server's lifetime: signing in and
     // linking this machine starts managed remote connectivity, and unlinking
     // stops it, with no restart in between.
-    if (!remoteConnectionsUnavailableReason(config.stateDir)) {
+    if (SONA_CLOUD_ACCOUNT_ENABLED && !remoteConnectionsUnavailableReason(config.stateDir)) {
       const outboundConnections = yield* HostConnectionRegistryService;
       const stopAccountObserver = observeControllerAccount(
         outboundConnections,
@@ -602,7 +607,7 @@ const makeServerProgram = (input: CliInput) =>
     // Start the retention loop after the server is live so startup can serve
     // existing history first, then hide inactive threads from the app in the background.
     yield* startThreadRetentionJob(orchestrationEngine, projectionSnapshotQuery);
-    if (isServerBetaFeatureEnabled(ACCOUNT_INBOX_BETA_FEATURE)) {
+    if (SONA_CLOUD_ACCOUNT_ENABLED && isServerBetaFeatureEnabled(ACCOUNT_INBOX_BETA_FEATURE)) {
       const inboxReporter = createAccountInboxReporter({
         sql: yield* SqlClient.SqlClient,
         recapQuery: yield* RecapStatsQuery,
@@ -611,7 +616,7 @@ const makeServerProgram = (input: CliInput) =>
       });
       yield* Effect.addFinalizer(() => Effect.sync(() => inboxReporter.stop()));
     }
-    if (accountLiveActivityEnabled(config.stateDir)) {
+    if (SONA_CLOUD_ACCOUNT_ENABLED && accountLiveActivityEnabled(config.stateDir)) {
       const activityReporter = createAccountLiveActivityReporter({
         sql: yield* SqlClient.SqlClient,
         baseDir: config.baseDir,
@@ -634,7 +639,7 @@ const makeServerProgram = (input: CliInput) =>
     // buckets from the local projections, and pushes absolute values to the
     // account. Best-effort and fully inert while signed out — like the host
     // registration above, it must never delay or fail a boot.
-    if (!accountProfileSyncUnavailableReason()) {
+    if (SONA_CLOUD_ACCOUNT_ENABLED && !accountProfileSyncUnavailableReason()) {
       const usageReporterSql = yield* SqlClient.SqlClient;
       const accountUsageReporter = createAccountUsageReporter({
         sql: usageReporterSql,
@@ -692,7 +697,10 @@ const makeServerProgram = (input: CliInput) =>
       Effect.forkChild,
     );
 
-    yield* Effect.logInfo("Synara running", makeServerStartupLogData(config));
+    yield* Effect.logInfo(
+      isSonaRelease ? "Sona running" : "Synara running",
+      makeServerStartupLogData(config),
+    );
     if (startupPairingUrl) {
       if (config.allowInsecureRemote && !config.publicUrl) {
         yield* Effect.logWarning(
@@ -810,7 +818,7 @@ const mcpIntegrationFlag = Flag.string("integration").pipe(
 // context. This avoids a duplicate `--home-dir` flag between the root command
 // and its MCP subcommands, which the Effect CLI assigns to the parent and
 // leaves the subcommand flag unset.
-const baseServerCommand = Command.make("synara", {
+const baseServerCommand = Command.make(isSonaRelease ? "sona" : "synara", {
   mode: modeFlag,
   port: portFlag,
   host: hostFlag,

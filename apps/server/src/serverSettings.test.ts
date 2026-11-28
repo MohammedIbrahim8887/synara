@@ -43,6 +43,53 @@ const runWithSettings = <A, E>(
 ) => Effect.runPromise(effect.pipe(Effect.provide(testLayer)) as Effect.Effect<A, E, never>);
 
 describe("ServerSettingsService", () => {
+  it("persists flows, rejects stale writes, and preserves data after invalid graph edits", async () => {
+    await runWithSettings(
+      Effect.gen(function* () {
+        const service = yield* ServerSettingsService;
+        const config = yield* ServerConfig;
+        yield* service.start;
+        const flows = [
+          {
+            id: "rule",
+            name: "Rule",
+            kind: "rule" as const,
+            enabled: true,
+            projectId: "",
+            nodes: [],
+            edges: [],
+          },
+        ];
+        yield* service.updateSettingsView({ flows, expectedFlows: [] });
+        expect(
+          (yield* Effect.exit(service.updateSettingsView({ flows: [], expectedFlows: [] })))._tag,
+        ).toBe("Failure");
+        expect(
+          (yield* Effect.exit(
+            service.updateSettingsView({
+              flows: [
+                { ...flows[0]!, edges: [{ id: "bad", source: "missing", target: "missing" }] },
+              ],
+              expectedFlows: flows,
+            }),
+          ))._tag,
+        ).toBe("Failure");
+        const restarted = yield* Effect.gen(function* () {
+          const fresh = yield* ServerSettingsService;
+          yield* fresh.start;
+          return yield* fresh.getSettings;
+        }).pipe(
+          Effect.provide(
+            ServerSettingsLive.pipe(
+              Layer.provide(Layer.merge(NodeServices.layer, Layer.succeed(ServerConfig, config))),
+            ),
+          ),
+        );
+        expect(restarted.flows).toEqual(flows);
+      }),
+    );
+  });
+
   it("defaults usage-limit recovery off and persists policy invalidation across restart", async () => {
     expect(Schema.decodeSync(ServerSettingsSchema)({})).toMatchObject({
       autoResumeAfterUsageLimits: false,

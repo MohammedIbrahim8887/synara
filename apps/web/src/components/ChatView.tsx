@@ -63,6 +63,12 @@ import { useRepoDiffTotals } from "~/hooks/useRepoDiffTotals";
 import { useStableCallback } from "~/hooks/useStableCallback";
 import { closeDockTerminalPane } from "~/hooks/useTerminalSurfaceController";
 import { useThreadRecap } from "~/hooks/useThreadRecap";
+import { useComposerPrediction } from "~/hooks/useComposerPrediction";
+import {
+  canShowComposerPrediction,
+  resolveComposerPredictionTarget,
+} from "~/lib/composerPrediction";
+import { executionNamespace, readExecutionContext } from "~/lib/hosts/executionContext";
 import { SINGLE_CHAT_PANE_SCOPE_ID } from "~/lib/chatPaneScope";
 import { formatComposerMentionToken } from "~/lib/composerMentions";
 import { hasActiveComposerSend } from "~/lib/composerSendOwnership";
@@ -306,9 +312,8 @@ import { PullRequestThreadDialog } from "./PullRequestThreadDialog";
 import { RenameThreadDialog } from "./RenameThreadDialog";
 import { hasUnseenSnoozeReturn, resolveThreadProjectLabel } from "./Sidebar.logic";
 import { SidebarHeaderNavigationControls } from "./SidebarHeaderNavigationControls";
-import { SynaraLogo } from "@synara/profile-ui/logo";
+import { SynaraLogo } from "~/components/SonaLogo";
 import { AsciiWaveBackground } from "./chat/AsciiWaveBackground";
-import { SponsorLandingBanner } from "./SponsorLandingBanner";
 import TerminalWorkspaceTabs from "./TerminalWorkspaceTabs";
 import { ThreadWorktreeHandoffDialog } from "./ThreadWorktreeHandoffDialog";
 
@@ -3686,6 +3691,46 @@ export default function ChatView({
     // between them replaces the node the observer watches.
     isCenteredEmptyLanding,
   ]);
+  // Predict for the chat in the main view, on its own account, once
+  // the latest turn settled; the ghost text shows only in an empty, idle, writable composer.
+  const composerPrediction = useComposerPrediction({
+    target: resolveComposerPredictionTarget({
+      enabled:
+        settings.showComposerSuggestions &&
+        readExecutionContext()?.execution.capabilities.composerPredictions === true &&
+        isServerThread &&
+        !isEditorRail &&
+        !isInactiveSplitPane &&
+        !activeThreadIsSidechat,
+      hostId: executionNamespace() ?? null,
+      threadId: activeThread?.id ?? null,
+      providerInstanceId: activeThreadProviderInstanceId,
+      latestTurn: activeLatestTurn,
+      latestTurnSettled,
+      hasStreamingAssistant: hasStreamingAssistantText,
+    }),
+    canShow: canShowComposerPrediction({
+      prompt,
+      hasAttachments:
+        composerImages.length > 0 ||
+        composerFiles.length > 0 ||
+        composerTerminalContexts.length > 0 ||
+        composerPastedTexts.length > 0 ||
+        composerAssistantSelections.length > 0 ||
+        composerBrowserAnnotations.length > 0 ||
+        composerPullRequestContexts.length > 0 ||
+        composerFileComments.length > 0,
+      menuOpen: composerMenuOpen,
+      hasLiveTurn: isWorking,
+      hasQueuedTurns: queuedComposerTurns.length > 0,
+      hasPendingUserInput: pendingUserInputs.length > 0 || activePendingProgress !== null,
+      isApprovalState: isComposerApprovalState,
+      isReadOnly:
+        isSubagentThreadView || isNativeSubagentMessagingUnavailable || isComposerEditorDisabled,
+    }),
+    prompt,
+  });
+
   // Started threads get the single-row composer while the draft is one plain line. Anything
   // that needs the block's room (approvals, plan follow-up, banners, attachment chips) keeps
   // the block layout. A pending question keeps the row: its card above holds the choices, and
@@ -3693,6 +3738,8 @@ export default function ChatView({
   const composerSingleRow = useComposerSingleRow({
     formRef: composerFormRef,
     prompt: activePendingProgress ? activePendingProgress.customAnswer : prompt,
+    // A suggestion that would wrap gets the block's room, like a long draft.
+    prediction: composerPrediction.ghost,
     eligible:
       !isCenteredEmptyLanding &&
       !isComposerApprovalState &&
@@ -5373,6 +5420,7 @@ export default function ChatView({
     onPromptChange,
     onComposerCommandKey,
   } = useChatComposerCommands({
+    isMobile: isMobileViewport,
     threadId,
     composerSelectLockRef,
     setComposerCommandPicker,
@@ -5423,6 +5471,8 @@ export default function ChatView({
     isComposerApprovalState,
     pendingUserInputs,
     composerDraft,
+    composerEditorRef,
+    composerPrediction: composerPrediction.controller,
   });
   const onExpandTimelineImage = useCallback(
     (preview: ExpandedImagePreview) => {
@@ -6728,6 +6778,7 @@ export default function ChatView({
                                   ? t("chat:askAboutItem", { item: standaloneSidechatItemNoun })
                                   : t("chat:doAnythingInSynara")
                   }
+                  prediction={composerPrediction.ghost}
                   disabled={isComposerEditorDisabled}
                   singleLine={composerSingleRow}
                 />
@@ -7032,11 +7083,6 @@ export default function ChatView({
                     stacked on top of the input) so starting a chat keeps the composer
                     where it lives for the rest of the conversation. */}
                 <div className="relative flex min-h-0 flex-1 items-center justify-center">
-                  {/* Pinned to the top so the heading stays optically centered; hidden on
-                      short panes where it would crowd the heading. */}
-                  <div className="absolute inset-x-0 top-4 flex justify-center px-6 [@media(max-height:620px)]:hidden">
-                    <SponsorLandingBanner className="w-full max-w-[520px]" />
-                  </div>
                   <div
                     className={cn(
                       "flex flex-col items-center gap-4 px-6 text-center select-none",

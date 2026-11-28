@@ -16,6 +16,7 @@ import type {
   AutomationNotificationPolicy,
   AutomationSchedule,
   AutomationWorktreeMode,
+  LinkedTool,
   ModelSelection,
   ProjectId,
   ProviderStartOptions,
@@ -102,6 +103,8 @@ export type AutomationFormState = {
   readonly maxIterations: string;
   readonly stopAfterFailures: AutomationFailurePolicyValue;
   readonly stopWhen: string;
+  /** Connected tools every run is told to use. */
+  readonly linkedTools: readonly LinkedTool[];
 };
 
 export type AutomationProjectModelSelectionSource = {
@@ -540,6 +543,7 @@ export function formFromDefinition(
     stopWhen: definition
       ? stopWhenFromCompletionPolicy(definition.completionPolicy ?? { type: "none" })
       : "",
+    linkedTools: definition?.linkedTools ?? [],
   };
 }
 
@@ -713,6 +717,7 @@ export function createInputFromForm(
       form.stopAfterFailures,
     ),
     completionPolicy: completionPolicyFromStopWhen(stopWhen),
+    linkedTools: [...form.linkedTools],
     ...(acknowledgedRisks ? { acknowledgedRisks } : {}),
   };
 }

@@ -24,6 +24,8 @@ export const RemoteResource = Schema.Union([
     revision: Schema.optional(ResourceText),
     grant: Schema.optional(boundedTrimmedNonEmptyString(4096)),
     download: Schema.optional(Schema.Boolean),
+    /** Ask for a cached WebM conversion of a video the client cannot decode. */
+    playable: Schema.optional(Schema.Literal("webm")),
   }),
   Schema.Struct({ kind: Schema.Literal("thread-export"), threadId: ResourceThreadId }),
   Schema.Struct({ kind: Schema.Literal("project-favicon"), cwd: ResourcePath }),

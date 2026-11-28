@@ -1,3 +1,8 @@
+// Exercise legacy account-scoped redemption explicitly; Sona's product gate stays off.
+vi.mock("@synara/shared/betaFeatures", async (original) => ({
+  ...(await original<typeof import("@synara/shared/betaFeatures")>()),
+  SONA_CLOUD_ACCOUNT_ENABLED: true,
+}));
 // Purpose: Keep pairing redemption's first bearer bound to its captured account authority.
 // Uses the public management entry point, real account helper/client, and an inert fetch observer.
 import { mkdtemp, rm } from "node:fs/promises";

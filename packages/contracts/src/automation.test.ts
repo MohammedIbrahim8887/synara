@@ -8,6 +8,7 @@ import {
   AutomationRunResult,
   AutomationSchedule,
   AutomationRunStatus,
+  AutomationUpdateInput,
   DEFAULT_AUTOMATION_RUNTIME_MODE,
 } from "./automation";
 
@@ -45,6 +46,7 @@ it.effect("defaults automation runtime mode to approval-required", () =>
     assert.isNull(parsed.proposalState);
     assert.strictEqual(parsed.notificationPolicy, "all");
     assert.strictEqual(parsed.heartbeatCooldownSeconds, 60);
+    assert.deepStrictEqual(parsed.linkedTools, []);
     assert.isUndefined(parsed.stopAfterConsecutiveFailures);
     assert.isUndefined(parsed.stopOnError);
   }),
@@ -108,10 +110,52 @@ it.effect("decodes legacy automation definitions without completion policies", (
     assert.isNull(parsed.proposalState);
     assert.strictEqual(parsed.notificationPolicy, "all");
     assert.strictEqual(parsed.heartbeatCooldownSeconds, 60);
+    assert.deepStrictEqual(parsed.linkedTools, []);
     assert.strictEqual(parsed.stopAfterConsecutiveFailures, 3);
     assert.strictEqual(parsed.consecutiveFailureCount, 0);
     assert.isNull(parsed.disabledReason);
     assert.isNull(parsed.disabledAt);
+  }),
+);
+
+it.effect("validates automation linked tools", () =>
+  Effect.gen(function* () {
+    const base = {
+      name: "Triage",
+      projectId: "project-1",
+      prompt: "Triage new issues.",
+      schedule: { type: "manual" },
+      modelSelection: { provider: "codex", model: "gpt-5-codex" },
+    };
+    const parsed = yield* decode(AutomationCreateInput, {
+      ...base,
+      linkedTools: [{ serverName: "linear_connector", name: "Linear" }],
+    });
+    assert.deepStrictEqual(parsed.linkedTools, [
+      { serverName: "linear_connector", name: "Linear" },
+    ]);
+
+    const badServerName = yield* Effect.exit(
+      decode(AutomationCreateInput, {
+        ...base,
+        linkedTools: [{ serverName: "Linear Connector", name: "Linear" }],
+      }),
+    );
+    assert.strictEqual(badServerName._tag, "Failure");
+
+    const tooMany = yield* Effect.exit(
+      decode(AutomationUpdateInput, {
+        id: "automation-1",
+        linkedTools: Array.from({ length: 21 }, (_, index) => ({
+          serverName: `tool_${index}`,
+          name: `Tool ${index}`,
+        })),
+      }),
+    );
+    assert.strictEqual(tooMany._tag, "Failure");
+
+    const omitted = yield* decode(AutomationUpdateInput, { id: "automation-1" });
+    assert.isUndefined(omitted.linkedTools);
   }),
 );
 

@@ -1,3 +1,5 @@
+import { redirect } from "@tanstack/react-router";
+import { isBetaFeatureOn, SPACES_ON } from "../betaFeatures";
 import { readWorkspaceFrame, type WorkspaceChatCreationCommand } from "../lib/hosts/workspaceFrame";
 import {
   dispatchSelectedWorkspaceChatCreation,
@@ -292,7 +294,7 @@ function ChatRouteGlobalShortcuts() {
       projects.filter(
         (project) =>
           isOrdinarySpaceProject(project, workspacePaths) &&
-          (project.spaceId ?? null) === activeSpaceId,
+          (!SPACES_ON || (project.spaceId ?? null) === activeSpaceId),
       ),
     [activeSpaceId, projects, workspacePaths],
   );
@@ -716,5 +718,10 @@ function ChatRouteLayout() {
 }
 
 export const Route = createFileRoute("/_chat")({
+  beforeLoad: ({ location }) => {
+    const section = location.pathname.split("/")[1] ?? "";
+    const feature = section === "hubs" || section === "studio" ? "groups" : section;
+    if (!isBetaFeatureOn(feature)) throw redirect({ to: "/", replace: true });
+  },
   component: ChatRouteLayout,
 });

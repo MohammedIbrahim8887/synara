@@ -303,6 +303,7 @@ import {
 } from "./wsSnapshotLiveStream";
 import { PullRequestService } from "./pullRequests/Services/PullRequestService";
 import { PullRequestAutoFixService } from "./pullRequestAutoFix/Services/PullRequestAutoFixService";
+import { ComposerPredictionService } from "./composerPrediction/Services/ComposerPredictionService";
 import {
   GitHubInboxRateLimitedError,
   GitHubInboxService,
@@ -555,6 +556,7 @@ const makeWsRpcHandlersLayer = () =>
       const path = yield* Path.Path;
       const pullRequests = yield* PullRequestService;
       const pullRequestAutoFix = yield* PullRequestAutoFixService;
+      const composerPrediction = yield* ComposerPredictionService;
       const githubInbox = yield* GitHubInboxService;
       const profileStatsQuery = yield* ProfileStatsQuery;
       const recapStatsQuery = yield* RecapStatsQuery;
@@ -1630,6 +1632,16 @@ const makeWsRpcHandlersLayer = () =>
               ) {
                 return yield* Effect.fail(new WsRpcError({ message: REMOTE_NATIVE_UNAVAILABLE }));
               }
+              if (
+                !isServerBetaFeatureEnabled("spaces") &&
+                (command.type.startsWith("space.") ||
+                  ((command.type === "project.create" || command.type === "project.meta.update") &&
+                    command.spaceId != null))
+              ) {
+                return yield* Effect.fail(
+                  new WsRpcError({ message: "Spaces are unavailable in Sona." }),
+                );
+              }
               // Refuse creating or re-kinding a Hub if the shared feature policy disables it.
               if (!isServerGroupsEnabled() && isGroupProjectCommand(command)) {
                 return yield* Effect.fail(new WsRpcError({ message: GROUPS_BETA_ONLY_MESSAGE }));
@@ -2699,7 +2711,9 @@ const makeWsRpcHandlersLayer = () =>
           rpcEffect(serverSettings.getSettingsView, "Failed to load server settings"),
         [WS_METHODS.serverUpdateSettings]: (input) =>
           rpcEffect(
-            (input.legacyProviders === undefined && input.legacyProviderInstances === undefined
+            (input.flows === undefined &&
+            input.legacyProviders === undefined &&
+            input.legacyProviderInstances === undefined
               ? Effect.void
               : requireWsOwnerSession
             ).pipe(Effect.andThen(serverSettings.updateSettingsView(input))),
@@ -2925,6 +2939,10 @@ const makeWsRpcHandlersLayer = () =>
             }),
             "Failed to generate thread recap",
           ),
+        // Thread-scoped like the other thread reads. The service derives the
+        // conversation and provider settings from the supplied IDs.
+        [WS_METHODS.serverGenerateComposerPrediction]: (input) =>
+          rpcEffect(composerPrediction.generate(input), "Failed to generate a composer suggestion"),
         [WS_METHODS.serverGenerateAutomationIntent]: (input) =>
           rpcEffect(
             Effect.gen(function* () {

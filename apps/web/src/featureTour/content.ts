@@ -19,7 +19,7 @@ export interface AppTourStep {
 }
 
 // A walk around the workspace, in the order the eye finds things: start a chat, watch it
-// in Activity, then the rail's Tasks, Inbox and Code review. Keep it about where things
+// in Activity, then Code review. Keep it about where things
 // live, not a feature inventory.
 export const APP_TOUR_STEPS: readonly AppTourStep[] = [
   {
@@ -35,20 +35,6 @@ export const APP_TOUR_STEPS: readonly AppTourStep[] = [
     placeKey: "workspace:profile_activity",
     titleKey: "onboarding:appTourActivityTitle",
     descriptionKey: "workspace:seeRunningTasksCompletedWorkAndAnythingThatNeeds",
-  },
-  {
-    id: "tasks",
-    anchor: "tasks",
-    placeKey: "chat:tasks",
-    titleKey: "onboarding:appTourTasksTitle",
-    descriptionKey: "common:keepYourToDosInOnePlaceAndHand",
-  },
-  {
-    id: "inbox",
-    anchor: "inbox",
-    placeKey: "workspace:inbox",
-    titleKey: "onboarding:appTourInboxTitle",
-    descriptionKey: "onboarding:appTourInboxDescription",
   },
   {
     id: "pullRequests",

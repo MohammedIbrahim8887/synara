@@ -10,6 +10,7 @@ import paperAppIcon from "~/assets/brands/paper.png";
 import {
   SiAtlassian,
   SiCanva,
+  SiClickup,
   SiCloudflare,
   SiFigma,
   SiGithub,
@@ -113,6 +114,7 @@ export const KNOWN_BRAND_ARTWORK: Record<string, BrandArtwork> = {
   googlecalendar: { icon: SiGooglecalendar, color: "#4285F4" },
   googledrive: { icon: SiGoogledrive, color: "#0F9D58" },
   huggingface: { icon: SiHuggingface, color: "#FF9D00" },
+  clickup: { icon: SiClickup, color: "#7B68EE" },
   linear: { icon: SiLinear, color: "#5E6AD2" },
   modelcontextprotocol: { icon: SiModelcontextprotocol, color: "#111111" },
   neon: { icon: SiNeon, color: "#34D59A" },

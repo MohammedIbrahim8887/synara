@@ -10,6 +10,7 @@ import {
   NATIVE_EDITOR_BETA_FEATURE,
 } from "./betaFeatures";
 import {
+  SONA_PRODUCTION_BUNDLE_ID,
   SYNARA_BETA_BUNDLE_ID,
   SYNARA_CANARY_BUNDLE_ID,
   SYNARA_CUA_BUNDLE_ID,
@@ -19,7 +20,7 @@ import {
 } from "./desktopIdentity";
 
 describe("isBetaFeatureEnabled", () => {
-  it.each(["inbox", "pull-request-auto-fix", "tasks", "accountProfileSync", "accountInbox"])(
+  it.each(["pull-request-auto-fix", "accountProfileSync"])(
     "offers %s in Stable and Beta",
     (feature) => {
       expect(isBetaFeatureEnabled(feature, "production")).toBe(true);
@@ -40,18 +41,22 @@ describe("isBetaFeatureEnabled", () => {
     }
   });
 
-  it("offers Hubs in Stable and all other flavors", () => {
-    for (const flavor of [
-      "production",
-      "development",
-      "canary",
-      "cua",
-      "beta",
-      "unknown",
-    ] as const) {
-      expect(isBetaFeatureEnabled(GROUPS_BETA_FEATURE, flavor)).toBe(true);
-    }
-  });
+  it.each([GROUPS_BETA_FEATURE, "tasks", "kanban", "inbox", "accountInbox", "spaces"])(
+    "removes %s in every flavor",
+    (feature) => {
+      for (const flavor of [
+        "production",
+        "development",
+        "canary",
+        "cua",
+        "beta",
+        "remote",
+        "unknown",
+      ] as const) {
+        expect(isBetaFeatureEnabled(feature, flavor)).toBe(false);
+      }
+    },
+  );
 
   it("offers inline visuals in Stable and all other flavors", () => {
     expect(isBetaFeatureEnabled(INLINE_VISUALS_BETA_FEATURE, "production")).toBe(true);
@@ -105,6 +110,7 @@ describe("isBetaFeatureEnabled", () => {
 
 describe("desktopFlavorFromBundleId", () => {
   it("maps each known bundle id", () => {
+    expect(desktopFlavorFromBundleId(SONA_PRODUCTION_BUNDLE_ID)).toBe("production");
     expect(desktopFlavorFromBundleId(SYNARA_PRODUCTION_BUNDLE_ID)).toBe("production");
     expect(desktopFlavorFromBundleId(SYNARA_DEVELOPMENT_BUNDLE_ID)).toBe("development");
     expect(desktopFlavorFromBundleId(SYNARA_CANARY_BUNDLE_ID)).toBe("canary");

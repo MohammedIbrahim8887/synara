@@ -31,7 +31,7 @@ describe("tool presentation", () => {
     expect(deriveReadableToolTitle(read, sourceTranslate)).toBe("Read");
     expect(deriveReadableToolTitle(command, sourceTranslate)).toBe("Reading");
     expect(deriveReadableToolTitle(computer, sourceTranslate)).toBe("Click");
-    expect(deriveSynaraMcpToolTitle(synara, sourceTranslate)).toBe("Synara is reading a thread");
+    expect(deriveSynaraMcpToolTitle(synara, sourceTranslate)).toBe("Sona is reading a thread");
     expect(deriveReadableCommandDisplay("rg Settings .", true, sourceTranslate)).toEqual({
       verb: "Searching",
       target: "for Settings in current directory",
@@ -39,7 +39,7 @@ describe("tool presentation", () => {
     });
     expect(
       deriveSynaraMcpToolTitle({ toolName: "synara_settings", status: "running" }, sourceTranslate),
-    ).toBe("Synara is handling settings");
+    ).toBe("Sona is handling settings");
   });
 
   it("translates known command verbs and preserves commands and arbitrary tool titles", () => {
@@ -47,7 +47,7 @@ describe("tool presentation", () => {
     expect(deriveLiteralCommand("cat Settings")).toBe("cat Settings");
     expect(deriveReadableCommandDisplay("cat Settings", true).verb).toBe("Reading");
     expect(deriveSynaraMcpToolTitle({ toolName: "synara_read_thread", status: "running" })).toBe(
-      "Synara is reading a thread",
+      "Sona is reading a thread",
     );
   });
 });
@@ -161,14 +161,14 @@ describe("deriveSynaraMcpToolTitle", () => {
 
   it("recognizes bare and already-humanized Synara tool names", () => {
     expect(deriveSynaraMcpToolTitle({ toolName: "synara_send_message", status: "running" })).toBe(
-      "Synara is sending a message",
+      "Sona is sending a message",
     );
     expect(
       deriveSynaraMcpToolTitle({ title: "Synara: Synara List Threads", status: "completed" }),
-    ).toBe("Synara listed threads");
+    ).toBe("Sona listed threads");
     expect(
       deriveSynaraMcpToolTitle({ toolName: "synara_create_thread", status: "cancelled" }),
-    ).toBe("Synara stopped creating a thread");
+    ).toBe("Sona stopped creating a thread");
   });
 
   it("ignores tools from other MCP servers", () => {
@@ -186,19 +186,19 @@ describe("deriveSynaraMcpToolTitle", () => {
         toolName: "mcp__synara__synara_delete_project",
         status: "running",
       }),
-    ).toBe("Synara is handling delete project");
+    ).toBe("Sona is handling delete project");
     expect(
       deriveSynaraMcpToolTitle({
         toolName: "Synara__synara_delete_project",
         status: "completed",
       }),
-    ).toBe("Synara handled delete project");
+    ).toBe("Sona handled delete project");
     expect(
       deriveSynaraMcpToolTitle({
         toolName: "synara_is_handling_delete_project",
         status: "completed",
       }),
-    ).toBe("Synara handled delete project");
+    ).toBe("Sona handled delete project");
   });
 
   it("does not reinterpret free text beginning with fallback status copy", () => {
@@ -226,14 +226,14 @@ describe("deriveSynaraMcpToolTitle", () => {
     expect(
       sanitizeSynaraMcpToolPreview({
         preview: "Synara__synara_create_threads",
-        heading: "Synara created threads",
+        heading: "Sona created threads",
         status: "completed",
       }),
     ).toBeNull();
     expect(
       sanitizeSynaraMcpToolPreview({
         preview: 'Unexpected key "reasoningEffort" for Claude Agent',
-        heading: "Synara couldn't create threads",
+        heading: "Sona couldn't create threads",
         status: "failed",
       }),
     ).toBe('Unexpected key "reasoningEffort" for Claude Agent');

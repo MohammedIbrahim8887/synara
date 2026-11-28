@@ -528,6 +528,7 @@ const textGeneration = {
   generateBranchName: () => Effect.die("unused"),
   generateThreadTitle: () => Effect.die("unused"),
   generateThreadRecap: () => Effect.die("unused"),
+  generateComposerPrediction: () => Effect.die("unused"),
   generateProjectDigest: () => Effect.die("unused"),
   generateAutomationIntent: () => Effect.die("unused"),
   evaluateAutomationCompletion: (input: CompletionEvaluationInputForTest) => {
@@ -1353,6 +1354,35 @@ layer("AutomationService", (it) => {
       assert.strictEqual(result.run.messageId, turnStart.message.messageId);
       assert.strictEqual(result.run.threadCreateCommandId, threadCreate.commandId);
       assert.strictEqual(result.run.turnStartCommandId, turnStart.commandId);
+    }),
+  );
+
+  it.effect("keeps linked tools across updates that omit them and tells each run to use them", () =>
+    Effect.gen(function* () {
+      resetHarness();
+      const service = yield* AutomationService;
+      const linear = { serverName: "linear_connector", name: "Linear" };
+      const created = yield* service.create({ ...createInput("local"), linkedTools: [linear] });
+      assert.deepStrictEqual(created.linkedTools, [linear]);
+
+      const renamed = yield* service.update({ id: created.id, name: "Renamed maintenance" });
+      assert.deepStrictEqual(renamed.linkedTools, [linear]);
+
+      yield* service.runNow({ automationId: created.id });
+      const turnStart = dispatchedCommands[1];
+      if (turnStart?.type !== "thread.turn.start") {
+        assert.fail("Expected a thread.turn.start command.");
+      }
+      assert.include(turnStart.message.text, '- @Linear: MCP server "linear_connector"');
+      assert.include(turnStart.message.text, "</linked_connectors>\n\n---\n\n");
+
+      const cleared = yield* service.update({ id: created.id, linkedTools: [] });
+      assert.deepStrictEqual(cleared.linkedTools, []);
+      const listed = yield* service.list({ projectId });
+      assert.deepStrictEqual(
+        listed.definitions.find((entry) => entry.id === created.id)?.linkedTools,
+        [],
+      );
     }),
   );
 

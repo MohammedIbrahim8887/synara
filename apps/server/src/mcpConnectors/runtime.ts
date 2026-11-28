@@ -461,7 +461,7 @@ export class McpConnectorRuntime {
       ...(ownClient ? { clientInformation: ownClient } : {}),
     };
     const { auth } = await loadMcpAuth();
-    // Vercel issues a refresh token only with offline_access. Preserve its
+    // Vercel requires offline_access for renewable grants. Preserve the
     // requested scopes so a saved connection can renew after the desktop restarts.
     const requestedScope = probe.kind === "oauth" ? probe.scope : undefined;
     const authorizationScope =

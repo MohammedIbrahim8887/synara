@@ -1,5 +1,5 @@
 // FILE: ModelCatalogRefresh.tsx
-// Purpose: Silently check the visible catalog; expose a retry only after failure.
+// Purpose: Check the viewed account on open and allow a manual rescan.
 // Layer: Chat picker UI
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
@@ -52,13 +52,15 @@ export function ModelCatalogRefresh(props: {
     };
   }, [provider, instanceId]);
 
-  if (!failed || props.silent) return null;
+  if (props.silent) return null;
 
   return (
     <div className="flex items-center justify-end gap-2 border-t border-border px-2 py-1">
-      <span role="status" className="mr-auto text-ui-xs text-muted-foreground">
-        {pending ? t("chat:checkingForModels") : t("chat:couldnTUpdateModels")}
-      </span>
+      {failed && (
+        <span role="status" className="mr-auto text-ui-xs text-muted-foreground">
+          {pending ? t("chat:checkingForModels") : t("chat:couldnTUpdateModels")}
+        </span>
+      )}
       <Button
         type="button"
         variant="ghost"
@@ -70,7 +72,7 @@ export function ModelCatalogRefresh(props: {
           aria-hidden="true"
           className={pending ? "size-3 motion-safe:animate-spin" : "size-3"}
         />
-        {t("common:common_retry")}
+        {failed ? t("common:common_retry") : t("chat:refreshModels")}
       </Button>
     </div>
   );

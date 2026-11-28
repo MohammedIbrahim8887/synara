@@ -19,7 +19,7 @@ import {
   type RelaySocket,
 } from "../relaySocket";
 import { makeCurrentWsFeatureCompatibilitySearchParams } from "../wsCompatibility";
-import serverPackageJson from "../../package.json" with { type: "json" };
+import { buildVersion } from "../buildVersion";
 
 export interface LocalRpcBridgeOptions {
   readonly listeningPort: number;
@@ -132,7 +132,7 @@ export async function bridgeRemoteSocketToLocalRpc(
       options.sessions.issueWebSocketToken(issued.sessionId, { ttl: Duration.millis(ttlMs) }),
     );
     if (externalClosed) throw externalClosed;
-    const search = makeCurrentWsFeatureCompatibilitySearchParams(serverPackageJson.version);
+    const search = makeCurrentWsFeatureCompatibilitySearchParams(buildVersion);
     if (peer.client && peer.compatibility) {
       search.set(WS_COMPATIBILITY_QUERY.clientBuild, peer.client.clientBuild);
       search.set(WS_COMPATIBILITY_QUERY.protocolEpoch, String(peer.compatibility.protocolEpoch));

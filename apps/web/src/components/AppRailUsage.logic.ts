@@ -10,9 +10,6 @@ import type { RailUsageWindow } from "~/appSettings";
 import { providerAccountQualifiedLabel } from "~/lib/providerInstancePresentation";
 import type { ProviderUsageDisplayRow } from "~/lib/providerUsageDisplay";
 
-/** The rail is one icon wide, so only a couple of rings fit above the Help button. */
-export const MAX_RAIL_USAGE_ACCOUNTS = 2;
-
 export interface RailUsageAccount {
   readonly instance: ResolvedProviderInstance;
   readonly label: string;
@@ -51,21 +48,19 @@ export function getRailUsageAccounts(
   });
 }
 
-/** Stored selection → unique available accounts, capped after dropping stale ids. */
+/** Stored selection → unique available accounts, preserving every saved choice. */
 export function resolveRailUsageAccounts(
   selected: ReadonlyArray<ProviderInstanceId>,
   available: ReadonlyArray<RailUsageAccount>,
 ): ReadonlyArray<RailUsageAccount> {
   const byId = new Map(available.map((account) => [account.instance.instanceId, account]));
-  return [...new Set(selected)]
-    .flatMap((instanceId) => {
-      const account = byId.get(instanceId);
-      return account ? [account] : [];
-    })
-    .slice(0, MAX_RAIL_USAGE_ACCOUNTS);
+  return [...new Set(selected)].flatMap((instanceId) => {
+    const account = byId.get(instanceId);
+    return account ? [account] : [];
+  });
 }
 
-/** Next selection after a Settings toggle; an account past the cap is ignored. */
+/** Next selection after a Settings toggle; only available accounts can be added. */
 export function toggleRailUsageAccount(
   selected: ReadonlyArray<ProviderInstanceId>,
   instanceId: ProviderInstanceId,
@@ -78,7 +73,7 @@ export function toggleRailUsageAccount(
   }
   if (
     current.includes(instanceId) ||
-    resolveRailUsageAccounts(current, available).length >= MAX_RAIL_USAGE_ACCOUNTS
+    !available.some((account) => account.instance.instanceId === instanceId)
   ) {
     return current;
   }

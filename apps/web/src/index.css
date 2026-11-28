@@ -1,3 +1,4 @@
+@layer theme, base, xyflow, components, utilities;
 @import "tailwindcss";
 /* profile-ui renders with Tailwind classes but lives outside this app's
    auto-detected content — without this, its responsive/variant classes
@@ -1477,6 +1478,42 @@ label:has(> select#reasoning-effort) select {
   overflow: hidden;
   border-radius: 0.65rem;
   background: var(--app-chat-code-surface);
+}
+
+/* Rendered ```mermaid / ```json-render fences (VisualFenceBlock). */
+.chat-visual-fence {
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0.75rem 0.85rem 0.9rem;
+}
+.chat-visual-fence--expanded {
+  padding: 0;
+}
+.chat-mermaid {
+  display: flex;
+  justify-content: center;
+}
+.chat-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+.chat-mermaid[data-expanded="true"] svg {
+  max-height: calc(100vh - 8rem);
+}
+.chat-visual-fence__error {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.chat-visual-fence__error-source {
+  margin-top: 0.5rem;
+  white-space: pre-wrap;
+  font-family: var(--font-chat-code-family);
+  color: var(--muted-foreground);
+}
+.chat-generative-ui {
+  min-width: 0;
+  font-family: var(--font-ui-family);
 }
 
 .chat-markdown .chat-markdown-codeblock__header {
@@ -3238,6 +3275,16 @@ diffs-container {
   background: transparent;
 }
 
+/* Android app (see lib/androidApp.ts): WebView re-samples and blurs the page under every
+   backdrop-filter layer on each frame, which stalls scrolling and drawer slides on phones.
+   Blurred surfaces there keep their translucent fill without the blur. */
+:root[data-android-app="true"] *,
+:root[data-android-app="true"] *::before,
+:root[data-android-app="true"] *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 /* Panel collapsed: the route body is the whole block, so its left corners round too. They
    wait for the panel to slide most of the way out, so no notch opens beside it meanwhile;
    opening squares them at once. */
@@ -3998,4 +4045,45 @@ diffs-container {
 /* Expanded document panes retain a readable line length while using more space. */
 [data-dock-maximized="true"] .editor-markdown-preview__body {
   max-width: 1120px;
+}
+
+/* The workflow canvas inherits the app typography and surface palette. */
+.sona-flow-canvas .react-flow {
+  --xy-background-color: var(--background);
+  --xy-background-pattern-color: color-mix(in srgb, var(--foreground) 14%, transparent);
+  --xy-edge-stroke: color-mix(in srgb, var(--foreground) 45%, transparent);
+  --xy-edge-stroke-selected: var(--color-text-accent);
+  --xy-edge-stroke-width: 1.5;
+  --xy-connectionline-stroke: var(--color-text-accent);
+  --xy-edge-label-color: var(--foreground);
+  --xy-edge-label-background-color: var(--background);
+  --xy-controls-button-background-color: var(--background);
+  --xy-controls-button-background-color-hover: color-mix(
+    in srgb,
+    var(--foreground) 8%,
+    var(--background)
+  );
+  --xy-controls-button-color: var(--foreground);
+  --xy-controls-button-border-color: color-mix(in srgb, var(--foreground) 12%, transparent);
+  font-family: inherit;
+}
+/* Step cards draw their own surface; the library wrapper stays invisible. */
+.sona-flow-canvas .react-flow__node {
+  padding: 0;
+  border: 0;
+  border-radius: 0.75rem;
+  background: transparent;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: var(--app-font-size-ui);
+}
+.sona-flow-canvas .react-flow__edge-text {
+  font-size: var(--app-font-size-ui-xs);
+  font-weight: 500;
+}
+.sona-flow-canvas .react-flow__controls {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  border-radius: 0.5rem;
+  box-shadow: none;
 }

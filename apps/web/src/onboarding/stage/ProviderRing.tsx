@@ -175,7 +175,7 @@ export function ProviderRing(props: { readonly live: ReadonlySet<ProviderKind> }
       ))}
 
       <img
-        src="/app-icons/dark.png"
+        src="/branding/sona-logo.png"
         alt=""
         draggable={false}
         className="scene-rise absolute"

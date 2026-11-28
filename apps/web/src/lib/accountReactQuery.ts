@@ -76,8 +76,7 @@ export function accountStatusQueryOptions() {
   return queryOptions({
     queryKey: accountQueryKeys.status(),
     queryFn: async (): Promise<AccountStatus> => {
-      const api = ensureNativeApi();
-      return api.account.status();
+      return { state: "signed-out" };
     },
     staleTime: 60_000,
     refetchOnWindowFocus: true,

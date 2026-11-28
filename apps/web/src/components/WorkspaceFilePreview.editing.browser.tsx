@@ -366,7 +366,7 @@ it("stops revalidation when a kept-mounted preview becomes hidden", async () => 
           workspaceRoot={WORKSPACE_ROOT}
           filePath={FILE_PATH}
           editable
-          liveRevalidationEnabled={false}
+          isVisible={false}
         />
       </QueryClientProvider>,
     );

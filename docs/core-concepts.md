@@ -1,5 +1,10 @@
 # Core concepts
 
+Sona omits the Inbox, Hubs, Spaces, and Tasks/board sections in every channel. Their
+saved records remain intact; existing projects and chats are visible without Space
+filtering, and saved Hub conversations behave as ordinary chats. The underlying
+term “task” below describes conversation ownership, not the removed Tasks section.
+
 Synara becomes much easier to use once its ownership model is clear: **each task owns one body of
 work** — its conversation, provider session, working environment, tool activity, and Git changes.
 

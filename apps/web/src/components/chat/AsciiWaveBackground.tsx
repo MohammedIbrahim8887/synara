@@ -266,6 +266,7 @@ export function AsciiWaveBackground() {
     let height = 0;
     let atlas: HTMLCanvasElement | null = null;
     let field: Field | null = null;
+    let resizePending = true;
     let frameId = 0;
     let lastFrameMs = 0;
     let lastInputMs = performance.now();
@@ -273,6 +274,12 @@ export function AsciiWaveBackground() {
     let revealStartMs: number | null = null;
     const seed = Math.random() * 1000;
     const firstPattern = Math.floor(Math.random() * FIELD_PATTERNS.length);
+
+    // Modal-covered owners remain CSS-visible. Base UI marks them inert instead;
+    // their decoration must not compete with scrolling or opening the modal.
+    const isInactive = () =>
+      container.closest("[inert], [data-base-ui-inert]") !== null ||
+      !container.checkVisibility({ visibilityProperty: true, opacityProperty: true });
 
     const drawGlyph = (target: Field, index: number) => {
       if (!atlas) return;
@@ -520,17 +527,21 @@ export function AsciiWaveBackground() {
 
     const tick = (nowMs: number) => {
       frameId = 0;
-      // Not set up yet: the idle setup calls wake() itself once the field exists.
-      if (document.hidden || !field) return;
+      if (document.hidden || !started) return;
       // Retained chat owners can be parked under an invisible ancestor. Do no canvas
       // work there; the slow visibility-only retry also resumes after DOM reparenting.
-      if (!container.checkVisibility({ visibilityProperty: true, opacityProperty: true })) {
+      if (isInactive()) {
         timerId = window.setTimeout(() => {
           timerId = 0;
           tick(performance.now());
         }, 1000);
         return;
       }
+      if (resizePending) {
+        rebuildWhenIdle();
+        return;
+      }
+      if (!field) return;
       const interval =
         ripplesRef.current.length > 0 ? RIPPLE_FRAME_INTERVAL_MS : ambientInterval(nowMs);
       if (nowMs - lastFrameMs >= interval) {
@@ -604,10 +615,16 @@ export function AsciiWaveBackground() {
     let started = false;
     let cancelIdle: (() => void) | null = null;
     const rebuildWhenIdle = () => {
+      resizePending = true;
       cancelIdle?.();
       cancelIdle = scheduleIdle(() => {
         cancelIdle = null;
+        if (document.hidden || isInactive()) {
+          wake();
+          return;
+        }
         resize();
+        resizePending = false;
         lastFrameMs = 0;
         wake();
       });

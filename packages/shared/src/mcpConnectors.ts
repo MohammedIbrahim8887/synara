@@ -40,6 +40,14 @@ export interface McpConnectorPreset {
  */
 export const MCP_CONNECTOR_PRESETS = [
   {
+    id: "clickup",
+    name: "ClickUp",
+    category: "productivity",
+    description: "Search tasks and docs, update tasks, and post comments in your workspace.",
+    url: "https://mcp.clickup.com/mcp",
+    docsUrl: "https://developer.clickup.com/docs/connect-an-ai-assistant-to-clickups-mcp-server",
+  },
+  {
     id: "supabase",
     name: "Supabase",
     category: "popular",

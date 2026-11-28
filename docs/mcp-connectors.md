@@ -51,9 +51,7 @@ elicitation requests other than tool approvals.
 
 ## Catalog
 
-The presets live in `packages/shared/src/mcpConnectors.ts`. Each one was checked against the live
-server: it either answers anonymously (Hugging Face) or accepts dynamic registration from an
-unknown client. Vercel documents that it admits only clients it has reviewed, yet a full sign-in
+The presets live in `packages/shared/src/mcpConnectors.ts`. Hugging Face answers anonymously. Most other presets use OAuth dynamic registration. Vercel documents that it admits only clients it has reviewed, yet a full sign-in
 from Synara succeeded on 2026-10-14; its consent page names Synara "An MCP client" until Vercel
 approves it through its [client review form](https://forms.gle/FQ3nYPbovoHvbfmz9). Todoist
 (`ai.todoist.net/mcp`) accepted a test registration from Synara on 2026-10-14. Slack registers no
@@ -64,6 +62,10 @@ explanation instead.
 
 Each preset sits on one shelf (`category`: Popular, Developer tools, or Productivity), which is
 how Settings → Connectors groups the catalog under its search field.
+
+Select **ClickUp** on the Productivity shelf and authorize your workspace in the browser.
+In a new chat, ask the agent to find overdue tasks or add a comment to a task.
+Access follows your ClickUp permissions. [ClickUp MCP documentation](https://developer.clickup.com/docs/connect-an-ai-assistant-to-clickups-mcp-server).
 
 Convex's hosted server (`mcp.convex.dev`) only guides setup and scaling; its deployment tools run
 in the local `npx convex mcp start` server, which can be added as a stdio connector. WorkOS has no Simple

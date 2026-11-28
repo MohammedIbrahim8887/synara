@@ -37,6 +37,7 @@ import {
 import { buildTemporaryWorktreeBranchName } from "@synara/shared/git";
 import { providerStartOptionsFromServerSettings } from "@synara/shared/serverSettings";
 import { autoRuntimeModeSelectionIssue } from "@synara/shared/runtimeMode";
+import { MCP_CONNECTORS_BETA_FEATURE } from "@synara/shared/betaFeatures";
 import { Cause, Effect, Layer, Option, PubSub, Queue, Stream } from "effect";
 import {
   isUnresolvedAutomationInstanceId,
@@ -71,6 +72,7 @@ import {
   GROUPS_BETA_ONLY_MESSAGE,
   isServerGroupsEnabled,
 } from "../../projectAgent/groupsBetaGate.ts";
+import { isServerBetaFeatureEnabled } from "../../betaFeatureGate.ts";
 import { AutomationServiceError } from "../Errors.ts";
 import { AutomationService, type AutomationServiceShape } from "../Services/AutomationService.ts";
 import { buildAutomationProposalActivity } from "../proposalActivity.ts";
@@ -744,6 +746,7 @@ function mergeDefinitionUpdate(
     retryPolicy: input.retryPolicy ?? current.retryPolicy,
     misfirePolicy: input.misfirePolicy ?? current.misfirePolicy,
     acknowledgedRisks: input.acknowledgedRisks ?? current.acknowledgedRisks,
+    linkedTools: input.linkedTools ?? current.linkedTools ?? [],
     iterationCount: userRestartedExhaustedLoop ? 0 : current.iterationCount,
     updatedAt: now,
   };
@@ -1347,6 +1350,7 @@ export const AutomationServiceLive = Layer.effect(
           lastRunAt: Option.isSome(lastRunOption)
             ? (lastRunOption.value.finishedAt ?? lastRunOption.value.startedAt)
             : null,
+          connectorsEnabled: isServerBetaFeatureEnabled(MCP_CONNECTORS_BETA_FEATURE),
         });
 
         const stopIfRunCannotDispatch = (latest: AutomationRun, detail: string) =>

@@ -1,3 +1,5 @@
+import { LocalConnections } from "./localConnections";
+import { ServerAuth } from "./auth/Services/ServerAuth";
 import { remoteConnectionsUnavailableReason } from "./remoteFeaturePolicy";
 import { ProjectionPendingInteractionRepositoryLive } from "./persistence/Layers/ProjectionPendingInteractions";
 import { ProviderSessionRuntimeRepositoryLive } from "./persistence/Layers/ProviderSessionRuntime";
@@ -235,8 +237,37 @@ export const createEffectServer = Effect.fn(function* (
     Effect.mapError((cause) => new ServerLifecycleError({ operation: "httpServerListen", cause })),
   );
 
+  const localAuth = yield* ServerAuth;
+  const localConnections = new LocalConnections({
+    secretsDir: config.secretsDir,
+    upstreamPort: resolveListeningPort(
+      (nodeServer as http.Server | null)?.address() ?? null,
+      config.port,
+    ),
+    authorize: async (request, websocket) => {
+      const headers = Object.fromEntries(
+        Object.entries(request.headers).map(([key, value]) => [
+          key,
+          Array.isArray(value) ? value.join(", ") : value,
+        ]),
+      );
+      const cookies = Object.fromEntries(
+        (request.headers.cookie ?? "").split(";").flatMap((entry) => {
+          const index = entry.indexOf("=");
+          return index < 0 ? [] : [[entry.slice(0, index).trim(), entry.slice(index + 1).trim()]];
+        }),
+      );
+      const input = { headers, cookies, url: new URL(request.url ?? "/", "https://localhost") };
+      await Effect.runPromise(
+        websocket
+          ? localAuth.authenticateWebSocketUpgrade(input)
+          : localAuth.authenticateHttpRequest(input),
+      );
+    },
+  });
+  yield* Effect.addFinalizer(() => Effect.promise(() => localConnections.setEnabled(false)));
   const routesLayer = Layer.mergeAll(
-    makeEffectHttpRouteLayer(readiness, shutdownController),
+    makeEffectHttpRouteLayer(readiness, shutdownController, localConnections),
     websocketRpcRouteLayer,
     agentGatewayRouteLayer,
     externalMcpRouteLayer,

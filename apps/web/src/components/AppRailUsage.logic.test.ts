@@ -6,7 +6,6 @@ import { resolveEnvironmentProviderUsageSummary } from "./chat/environment/Envir
 import { deriveProviderUsageDisplayRows } from "~/lib/providerUsageDisplay";
 
 import {
-  MAX_RAIL_USAGE_ACCOUNTS,
   getRailUsageAccounts,
   railUsageRingTone,
   selectRailUsageRows,
@@ -27,7 +26,7 @@ describe("rail usage accounts", () => {
   const selectedIds = (selected: readonly string[]) =>
     resolveRailUsageAccounts(selected, accounts).map((account) => account.instance.instanceId);
 
-  it("filters globally disabled accounts before the cap while preserving saved choices", () => {
+  it("filters globally disabled accounts while preserving saved choices", () => {
     const visible = getRailUsageAccounts(deriveProviderInstances(DEFAULT_SERVER_SETTINGS_VIEW), [
       "codex",
       "claudeAgent",
@@ -43,7 +42,7 @@ describe("rail usage accounts", () => {
     expect(toggleRailUsageAccount(added, "opencode", false, visible)).toEqual(saved);
     expect(
       resolveRailUsageAccounts(added, accounts).map((account) => account.instance.instanceId),
-    ).toEqual(saved);
+    ).toEqual(added);
   });
 
   it("allows two accounts of the same provider and distinguishes their names", () => {
@@ -58,13 +57,11 @@ describe("rail usage accounts", () => {
     ]);
   });
 
-  it("drops duplicate, removed, and disabled accounts before applying the cap", () => {
+  it("drops duplicate, removed, and disabled accounts without limiting the remaining selection", () => {
     expect(
       selectedIds(["removed", "claude_disabled", "codex", "codex", "claude_work", "cursor"]),
-    ).toEqual(["codex", "claude_work"]);
-    expect(selectedIds(["codex", "claudeAgent", "claude_work"]).length).toBe(
-      MAX_RAIL_USAGE_ACCOUNTS,
-    );
+    ).toEqual(["codex", "claude_work", "cursor"]);
+    expect(selectedIds(["codex", "claudeAgent", "claude_work"]).length).toBe(3);
     expect(selectedIds([])).toEqual([]);
   });
 
@@ -91,10 +88,10 @@ describe("toggleRailUsageAccount", () => {
     ).toEqual(["claude_work"]);
   });
 
-  it("ignores another account past the cap", () => {
+  it("adds another account beyond the former two-account limit", () => {
     expect(
       toggleRailUsageAccount(["claudeAgent", "claude_work"], "codex", true, available),
-    ).toEqual(["claudeAgent", "claude_work"]);
+    ).toEqual(["claudeAgent", "claude_work", "codex"]);
   });
 });
 

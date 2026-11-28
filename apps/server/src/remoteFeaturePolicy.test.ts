@@ -1,3 +1,10 @@
+const cloudFeature = vi.hoisted(() => ({ enabled: true }));
+vi.mock("@synara/shared/betaFeatures", async (original) => ({
+  ...(await original<typeof import("@synara/shared/betaFeatures")>()),
+  get SONA_CLOUD_ACCOUNT_ENABLED() {
+    return cloudFeature.enabled;
+  },
+}));
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   SYNARA_BETA_BUNDLE_ID,
@@ -82,4 +89,19 @@ describe("account profile activation", () => {
     vi.stubEnv("SYNARA_ACCOUNT_PROFILE_SYNC", "1");
     expect(requireAccountProfileSync).not.toThrow();
   });
+});
+
+it("Sona refuses hosted connections and sync even with legacy opt-ins", () => {
+  cloudFeature.enabled = false;
+  try {
+    vi.stubEnv("SYNARA_REMOTE_CONNECTIONS", "1");
+    vi.stubEnv("SYNARA_ACCOUNT_PROFILE_SYNC", "1");
+    expect(remoteConnectionsUnavailableReason()).toBe(
+      "Use Sona local connections to pair your devices.",
+    );
+    expect(accountLiveActivityEnabled()).toBe(false);
+    expect(requireAccountProfileSync).toThrow("Hosted account sync is unavailable in Sona.");
+  } finally {
+    cloudFeature.enabled = true;
+  }
 });

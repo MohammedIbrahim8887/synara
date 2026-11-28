@@ -9,6 +9,7 @@ import {
   AutomationSchedule,
   DEFAULT_AUTOMATION_STOP_AFTER_CONSECUTIVE_FAILURES,
   DEFAULT_AUTOMATION_RUNTIME_MODE,
+  LinkedTool,
   ModelSelection,
   NonNegativeInt,
   ProviderStartOptions,
@@ -103,6 +104,8 @@ const AutomationDefinitionDbRow = Schema.Struct({
   retryPolicy: Schema.fromJsonString(AutomationDefinition.fields.retryPolicy),
   misfirePolicy: AutomationDefinition.fields.misfirePolicy,
   acknowledgedRisks: Schema.fromJsonString(AutomationDefinition.fields.acknowledgedRisks),
+  /** Raw column text; decoded leniently by `linkedToolsFromColumn`. */
+  linkedTools: Schema.NullOr(Schema.String),
   iterationCount: AutomationDefinition.fields.iterationCount,
   managedByProject: Schema.Number,
   createdAt: AutomationDefinition.fields.createdAt,
@@ -156,6 +159,38 @@ function withResultDefaults(run: AutomationRun): NonNullable<AutomationRun["resu
 }
 
 const decodeDefinition = Schema.decodeUnknownEffect(AutomationDefinition);
+const decodeLinkedTool = Schema.decodeUnknownOption(LinkedTool);
+
+/** Maximum entries kept from a stored list; matches the `LinkedTools` contract bound. */
+const MAX_LINKED_TOOLS = 20;
+
+// NULL (rows from before migration 145), malformed JSON, and entries that no longer satisfy
+// the contract all read as "not linked" so one bad value never makes the definition unreadable.
+export function linkedToolsFromColumn(value: string | null): LinkedTool[] {
+  if (value === null) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const tools: LinkedTool[] = [];
+  const seen = new Set<string>();
+  for (const entry of parsed) {
+    const tool = decodeLinkedTool(entry);
+    if (Option.isNone(tool) || seen.has(tool.value.serverName)) continue;
+    seen.add(tool.value.serverName);
+    tools.push(tool.value);
+    if (tools.length >= MAX_LINKED_TOOLS) break;
+  }
+  return tools;
+}
+
+// An empty list is stored as NULL, the same value rows written before the column existed hold.
+function linkedToolsColumn(tools: AutomationDefinition["linkedTools"]): string | null {
+  return tools && tools.length > 0 ? JSON.stringify(tools) : null;
+}
 const decodeRun = Schema.decodeUnknownEffect(AutomationRun);
 
 /** Upper bound on how many run rows the list query returns to a client snapshot. */
@@ -176,6 +211,7 @@ function toDefinition(row: AutomationDefinitionDbRow) {
     enabled: row.enabled === 1,
     managedByProject: row.managedByProject === 1,
     providerOptions: row.providerOptions ?? undefined,
+    linkedTools: linkedToolsFromColumn(row.linkedTools),
   }).pipe(Effect.mapError(toPersistenceDecodeError("AutomationRepository.definitionRowToDomain")));
 }
 
@@ -234,6 +270,7 @@ const makeAutomationRepository = Effect.gen(function* () {
           retry_policy_json,
           misfire_policy,
           acknowledged_risks_json,
+          linked_tools_json,
           iteration_count,
           managed_by_project,
           created_at,
@@ -273,6 +310,7 @@ const makeAutomationRepository = Effect.gen(function* () {
           ${definition.retryPolicy},
           ${definition.misfirePolicy},
           ${definition.acknowledgedRisks},
+          ${definition.linkedTools},
           ${definition.iterationCount},
           ${definition.managedByProject},
           ${definition.createdAt},
@@ -325,6 +363,7 @@ const makeAutomationRepository = Effect.gen(function* () {
           retry_policy_json AS "retryPolicy",
           misfire_policy AS "misfirePolicy",
           acknowledged_risks_json AS "acknowledgedRisks",
+          linked_tools_json AS "linkedTools",
           iteration_count AS "iterationCount",
           COALESCE(managed_by_project, 0) AS "managedByProject",
           created_at AS "createdAt",
@@ -374,6 +413,7 @@ const makeAutomationRepository = Effect.gen(function* () {
             retry_policy_json = ${definition.retryPolicy},
             misfire_policy = ${definition.misfirePolicy},
             acknowledged_risks_json = ${definition.acknowledgedRisks},
+            linked_tools_json = ${definition.linkedTools},
             iteration_count = ${definition.iterationCount},
             managed_by_project = ${definition.managedByProject},
             updated_at = ${definition.updatedAt},
@@ -447,6 +487,7 @@ const makeAutomationRepository = Effect.gen(function* () {
           retry_policy_json AS "retryPolicy",
           misfire_policy AS "misfirePolicy",
           acknowledged_risks_json AS "acknowledgedRisks",
+          linked_tools_json AS "linkedTools",
           iteration_count AS "iterationCount",
           COALESCE(managed_by_project, 0) AS "managedByProject",
           created_at AS "createdAt",
@@ -502,6 +543,7 @@ const makeAutomationRepository = Effect.gen(function* () {
           definitions.retry_policy_json AS "retryPolicy",
           definitions.misfire_policy AS "misfirePolicy",
           definitions.acknowledged_risks_json AS "acknowledgedRisks",
+          definitions.linked_tools_json AS "linkedTools",
           definitions.iteration_count AS "iterationCount",
           COALESCE(definitions.managed_by_project, 0) AS "managedByProject",
           definitions.created_at AS "createdAt",
@@ -1616,6 +1658,7 @@ const makeAutomationRepository = Effect.gen(function* () {
       retryPolicy: input.retryPolicy ?? { type: "none" },
       misfirePolicy: input.misfirePolicy ?? "coalesce",
       acknowledgedRisks: input.acknowledgedRisks ?? [],
+      linkedTools: input.linkedTools ?? [],
       iterationCount: 0,
       managedByProject: request.managedByProject ?? false,
       createdAt: now,
@@ -1631,6 +1674,7 @@ const makeAutomationRepository = Effect.gen(function* () {
       completionPolicy: definition.completionPolicy ?? { type: "none" },
       completionPolicyVersion: definition.completionPolicyVersion ?? 1,
       completionPolicyUpdatedAt: definition.completionPolicyUpdatedAt ?? definition.createdAt,
+      linkedTools: linkedToolsColumn(definition.linkedTools),
     }).pipe(
       Effect.mapError(toPersistenceSqlError("AutomationRepository.createDefinition:query")),
       Effect.as(definition),
@@ -1649,6 +1693,7 @@ const makeAutomationRepository = Effect.gen(function* () {
         completionPolicy: definition.completionPolicy ?? { type: "none" },
         completionPolicyVersion: definition.completionPolicyVersion ?? 1,
         completionPolicyUpdatedAt: definition.completionPolicyUpdatedAt ?? definition.createdAt,
+        linkedTools: linkedToolsColumn(definition.linkedTools),
       },
       expectedUpdatedAt,
     }).pipe(

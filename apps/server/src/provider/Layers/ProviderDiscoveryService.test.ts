@@ -41,6 +41,7 @@ import { ProviderDiscoveryService } from "../Services/ProviderDiscoveryService.t
 import { ProviderHealth } from "../Services/ProviderHealth.ts";
 import { clearSkillsCatalogCacheForTests } from "../skillsCatalog.ts";
 import { ProviderDiscoveryServiceLive } from "./ProviderDiscoveryService.ts";
+import { VISUALIZE_SKILL_NAME } from "@synara/shared/visualizeSkill";
 
 let root: string;
 let homeDir: string;
@@ -177,7 +178,8 @@ describe("ProviderDiscoveryService.listSkills", () => {
 
     const result = await runListSkills({ adapter: {}, provider: "antigravity" });
 
-    expect(result.skills.map((skill) => skill.name)).toEqual(["portable"]);
+    // Sona's built-in visualize skill ships with every catalog.
+    expect(result.skills.map((skill) => skill.name)).toEqual(["portable", VISUALIZE_SKILL_NAME]);
   });
 
   it("prefers provider-native entries and appends catalog-only skills", async () => {
@@ -213,7 +215,8 @@ describe("ProviderDiscoveryService.listSkills", () => {
       provider: "opencode",
     });
 
-    expect(result.skills.map((skill) => skill.name)).toEqual(["portable"]);
+    // Sona's built-in visualize skill ships with every catalog.
+    expect(result.skills.map((skill) => skill.name)).toEqual(["portable", VISUALIZE_SKILL_NAME]);
   });
 
   it("falls back to the catalog when native discovery fails", async () => {
@@ -233,7 +236,8 @@ describe("ProviderDiscoveryService.listSkills", () => {
       provider: "codex",
     });
 
-    expect(result.skills.map((skill) => skill.name)).toEqual(["portable"]);
+    // Sona's built-in visualize skill ships with every catalog.
+    expect(result.skills.map((skill) => skill.name)).toEqual(["portable", VISUALIZE_SKILL_NAME]);
   });
 });
 

@@ -15,7 +15,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAppSettings, type RailUsageWindow } from "~/appSettings";
 import {
-  MAX_RAIL_USAGE_ACCOUNTS,
   getRailUsageAccounts,
   resolveRailUsageAccounts,
   toggleRailUsageAccount,
@@ -220,7 +219,6 @@ export function ProviderUsageSettingsPanel() {
     settings.railUsageInstanceIds ?? settings.railUsageProviders,
     railUsageAccounts,
   ).map((account) => account.instance.instanceId);
-  const railUsageFull = railUsageInstanceIds.length >= MAX_RAIL_USAGE_ACCOUNTS;
   const usageQuery = useQuery(serverAllProviderUsageQueryOptions());
   const refreshMutation = useMutation({
     mutationFn: () => fetchAllProviderUsage({ forceRefresh: true }),
@@ -254,10 +252,7 @@ export function ProviderUsageSettingsPanel() {
 
   const appUsageSettings = (
     <>
-      <SettingsSection
-        translateTitle={false}
-        title={t("settings:sidebarUsageAccountLimit", { count: MAX_RAIL_USAGE_ACCOUNTS })}
-      >
+      <SettingsSection translateTitle={false} title={t("settings:sidebarUsageAccounts")}>
         {railUsageAccounts.map(({ instance, label }) => {
           const checked = railUsageInstanceIds.includes(instance.instanceId);
           return (
@@ -276,7 +271,7 @@ export function ProviderUsageSettingsPanel() {
               actions={
                 <Switch
                   checked={checked}
-                  disabled={serverSettingsQuery.isPending || (!checked && railUsageFull)}
+                  disabled={serverSettingsQuery.isPending}
                   onCheckedChange={(next) =>
                     updateSettings({
                       railUsageInstanceIds: toggleRailUsageAccount(

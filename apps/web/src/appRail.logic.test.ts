@@ -56,7 +56,7 @@ describe("rail item order", () => {
     expect(normalizeHiddenRailItems(["home", "kanban", "gone", "kanban"])).toEqual(["kanban"]);
   });
 
-  it("drops hidden items unless active, and Studio or Inbox unless available", () => {
+  it("keeps available active items but never restores removed sections", () => {
     const order = normalizeRailItemOrder([]);
     expect(
       buildRailItemOrder({
@@ -66,7 +66,7 @@ describe("rail item order", () => {
         studioAvailable: false,
         inboxAvailable: false,
       }),
-    ).toEqual(["home", "kanban", "tasks", "pullRequests", "automations"]);
+    ).toEqual(["home", "pullRequests", "automations"]);
     expect(
       buildRailItemOrder({
         order,
@@ -75,21 +75,18 @@ describe("rail item order", () => {
         studioAvailable: true,
         inboxAvailable: true,
       }),
-    ).toEqual(order);
+    ).toEqual(["home", "pullRequests", "automations"]);
   });
 
-  it("offers Inbox and Studio in Customize only where they exist", () => {
+  it("excludes removed sections from Customize regardless of server capabilities", () => {
     const stable = { studioAvailable: false, inboxAvailable: false };
     expect(RAIL_ORDERABLE_ITEM_IDS.filter((id) => isRailItemAvailable(id, stable))).toEqual([
       "home",
-      "spaces",
-      "kanban",
-      "tasks",
       "pullRequests",
       "automations",
     ]);
     expect(isRailItemAvailable("inbox", { studioAvailable: false, inboxAvailable: true })).toBe(
-      true,
+      false,
     );
   });
 });

@@ -13,6 +13,7 @@ import {
   TrimmedNonEmptyString,
   TurnId,
 } from "./baseSchemas";
+import { LinkedTools } from "./flows";
 import { ModelSelection, ProviderKind, ProviderStartOptions, RuntimeMode } from "./orchestration";
 
 export const DEFAULT_AUTOMATION_RUNTIME_MODE: RuntimeMode = "approval-required";
@@ -284,6 +285,8 @@ export const AutomationDefinition = Schema.Struct({
   acknowledgedRisks: Schema.Array(
     Schema.Literals(["full-access", "local-checkout", "fast-interval"]),
   ),
+  /** Connected tools every run is told to use. Rows written before the field decode as none. */
+  linkedTools: Schema.optional(LinkedTools).pipe(Schema.withDecodingDefault(() => [])),
   /** Number of runs created so far; used to enforce maxIterations. */
   iterationCount: NonNegativeInt,
   /** Project Coordinator owns this definition; ordinary automation edits cannot change ownership. */
@@ -353,6 +356,7 @@ const AutomationDefinitionConfig = Schema.Struct({
   acknowledgedRisks: Schema.optional(
     Schema.Array(Schema.Literals(["full-access", "local-checkout", "fast-interval"])),
   ).pipe(Schema.withDecodingDefault(() => [])),
+  linkedTools: Schema.optional(LinkedTools).pipe(Schema.withDecodingDefault(() => [])),
 });
 
 export const AutomationCreateInput = AutomationDefinitionConfig;
@@ -392,6 +396,8 @@ export const AutomationUpdateInput = Schema.Struct({
   acknowledgedRisks: Schema.optional(
     Schema.Array(Schema.Literals(["full-access", "local-checkout", "fast-interval"])),
   ),
+  /** Replaces the whole list; omitted keeps the stored tools. */
+  linkedTools: Schema.optional(LinkedTools),
 });
 export type AutomationUpdateInput = typeof AutomationUpdateInput.Type;
 

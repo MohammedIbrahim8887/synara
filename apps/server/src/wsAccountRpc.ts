@@ -1,3 +1,4 @@
+import { SONA_CLOUD_ACCOUNT_ENABLED } from "@synara/shared/betaFeatures";
 // FILE: wsAccountRpc.ts
 // Purpose: The account RPC handlers, as one owner-guarded unit.
 // Layer: server RPC handlers
@@ -36,6 +37,11 @@ export interface AccountRpcHandlerDeps {
  */
 const ownerAccountRpc = <A, E, R>(make: () => Effect.Effect<A, E, R>, fallbackMessage: string) =>
   requireOwnerRole.pipe(
+    Effect.andThen(() =>
+      SONA_CLOUD_ACCOUNT_ENABLED
+        ? Effect.void
+        : Effect.fail(new WsRpcError({ message: "Hosted accounts are unavailable in Sona." })),
+    ),
     Effect.flatMap(() =>
       make().pipe(Effect.mapError((cause) => toAccountWsRpcError(cause, fallbackMessage))),
     ),
@@ -58,6 +64,11 @@ const ownerSensitiveAccountRpc = <A, E, R>(
   fallbackMessage: string,
 ) =>
   requireOwnerRole.pipe(
+    Effect.andThen(() =>
+      SONA_CLOUD_ACCOUNT_ENABLED
+        ? Effect.void
+        : Effect.fail(new WsRpcError({ message: "Hosted accounts are unavailable in Sona." })),
+    ),
     Effect.flatMap(() =>
       make().pipe(Effect.mapError((cause) => toSensitiveWsRpcError(cause, fallbackMessage))),
     ),
@@ -66,10 +77,12 @@ const ownerSensitiveAccountRpc = <A, E, R>(
 export function makeAccountRpcHandlers({ accountSession, openBrowser }: AccountRpcHandlerDeps) {
   return {
     [WS_METHODS.accountStatus]: () =>
-      ownerSensitiveAccountRpc(
-        () => Effect.tryPromise(() => accountSession.status()),
-        "Failed to read the account session",
-      ),
+      !SONA_CLOUD_ACCOUNT_ENABLED
+        ? requireOwnerRole.pipe(Effect.as({ state: "signed-out" as const }))
+        : ownerSensitiveAccountRpc(
+            () => Effect.tryPromise(() => accountSession.status()),
+            "Failed to read the account session",
+          ),
     [WS_METHODS.accountBillingStatus]: () =>
       ownerSensitiveAccountRpc(
         () => Effect.tryPromise(() => accountSession.billingStatus()),

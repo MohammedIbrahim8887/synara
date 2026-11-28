@@ -182,7 +182,7 @@ export function UsageAnalyticsPanel() {
           value={scope}
           onValueChange={setScope}
           options={[
-            { value: "synara", label: "In Synara" },
+            { value: "synara", label: "In Sona" },
             { value: "mac", label: "This Mac" },
           ]}
         />
@@ -208,8 +208,8 @@ export function UsageAnalyticsPanel() {
             title="No usage in this period"
             description={
               scope === "mac"
-                ? "Chats in Synara and Claude Code or Codex sessions on this Mac show up here."
-                : "Chats you run in Synara show up here as they use tokens."
+                ? "Chats in Sona and Claude Code or Codex sessions on this Mac show up here."
+                : "Chats you run in Sona show up here as they use tokens."
             }
           />
         </SettingsCard>
@@ -487,7 +487,7 @@ function UsageAnalyticsBody(props: {
               title="Who started the work"
               detail={
                 view.scope === "mac"
-                  ? "Tokens by turn origin, in Synara chats."
+                  ? "Tokens by turn origin, in Sona chats."
                   : "Tokens by turn origin."
               }
             />
@@ -553,12 +553,10 @@ function UsageAnalyticsBody(props: {
               <li>
                 {view.sessionFileProviders.map((provider) => providerLabel(provider)).join(", ")}:
                 every session on this Mac, read from their own session files. Other providers: chats
-                run in Synara.
+                run in Sona.
               </li>
             ) : (
-              <li>
-                Only chats run in Synara are counted. Deleted chats keep the turns you started.
-              </li>
+              <li>Only chats run in Sona are counted. Deleted chats keep the turns you started.</li>
             )}
             {view.scope === "mac" && view.sessionFileProviders.includes("claudeAgent") ? (
               <li>

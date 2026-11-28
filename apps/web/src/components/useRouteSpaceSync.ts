@@ -1,3 +1,4 @@
+import { SPACES_ON } from "../betaFeatures";
 // FILE: useRouteSpaceSync.ts
 // Purpose: Synchronize the selected Space only when route identity actually changes.
 
@@ -21,7 +22,7 @@ export function useRouteSpaceSync(input: {
   // and the still-current route must not immediately overwrite that user intent. Primitive route
   // inputs rerun this effect once navigation really changes identity.
   useEffect(() => {
-    if (routeProjectId === null || routeSpaceId === undefined) return;
+    if (!SPACES_ON || routeProjectId === null || routeSpaceId === undefined) return;
     if (useSpacesUiStore.getState().activeSpaceId !== routeSpaceId) {
       setActiveSpaceId(routeSpaceId);
     }

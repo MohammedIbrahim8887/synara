@@ -249,3 +249,35 @@ it("adds a local command through the explicit run action", async () => {
     vi.clearAllMocks();
   }
 });
+
+it("opens ClickUp OAuth after confirmation in the direct catalog", async () => {
+  api.listMcpConnectors.mockResolvedValue([]);
+  api.listMcpConnectorProposals.mockResolvedValue([]);
+  api.connectMcpConnector.mockResolvedValue({
+    authorizationUrl: "https://mcp.clickup.com/oauth/authorize?state=fixture",
+    connector: null,
+  });
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const screen = await render(
+    <QueryClientProvider client={queryClient}>
+      <McpConnectorsSettingsPanel active />
+    </QueryClientProvider>,
+  );
+  try {
+    await screen.getByRole("button", { name: /^ClickUp/ }).click();
+    expect(api.connectMcpConnector).not.toHaveBeenCalled();
+    await screen.getByRole("button", { name: "Continue to ClickUp" }).click();
+    await expect
+      .poll(() => api.connectMcpConnector.mock.calls.at(-1)?.[0])
+      .toEqual({
+        presetId: "clickup",
+      });
+    await expect
+      .poll(() => api.openExternal.mock.calls.at(-1)?.[0])
+      .toBe("https://mcp.clickup.com/oauth/authorize?state=fixture");
+  } finally {
+    await screen.unmount();
+    queryClient.clear();
+    vi.clearAllMocks();
+  }
+});

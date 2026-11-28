@@ -10,12 +10,9 @@ import * as Path from "node:path";
 
 import type { BrowserToolName, ThreadId } from "@synara/contracts";
 
-import {
-  DesktopBrowserAutomationHost,
-  type BrowserAutomationToolRequest,
-} from "./browserAutomation/desktopBrowserAutomationHost";
+// Type-only: Sona's owned-browser host reuses this transport outside Electron.
+import type { BrowserAutomationToolRequest } from "./browserAutomation/desktopBrowserAutomationHost";
 import { BrowserAutomationHostError } from "./browserAutomation/hostErrors";
-import type { DesktopBrowserManager } from "./browserManager";
 
 const FRAME_HEADER_BYTES = 4;
 // 8 MiB PNG sidecars expand to about 10.7 MiB in base64; 12 MiB keeps the
@@ -57,14 +54,18 @@ interface PipeClient {
   readonly abortControllers: Map<RpcId, AbortController>;
 }
 
+/** The tool executor behind the pipe. The server disposes it with the pipe. */
+export interface BrowserHostAutomation {
+  executeTool(request: BrowserAutomationToolRequest): Promise<unknown>;
+  dispose?(): Promise<void> | void;
+  waitForIdle?(): Promise<void>;
+}
+
 export interface BrowserHostPipeServerOptions {
-  readonly vault?: import("./browserAutomation/browserVault").BrowserVault;
-  readonly vaultCapture?: import("./browserAutomation/browserVaultCapture").BrowserVaultCapture;
+  readonly automationHost: BrowserHostAutomation;
   readonly pipePath?: string;
   readonly capability?: string;
   readonly platform?: NodeJS.Platform;
-  readonly requestOpenPanel?: (threadId: ThreadId) => void | Promise<void>;
-  readonly automationHost?: Pick<DesktopBrowserAutomationHost, "executeTool">;
   readonly maxInFlightRequests?: number;
   readonly maxQueuedOutputBytes?: number;
 }
@@ -236,19 +237,13 @@ export class BrowserHostPipeServer {
   private readonly server: Net.Server;
   private readonly pipePath: string;
   private readonly platform: NodeJS.Platform;
-  private readonly automationHost: Pick<DesktopBrowserAutomationHost, "executeTool">;
-  private readonly disposeAutomationHost: (() => Promise<void>) | undefined;
-  private readonly drainAutomationHost: (() => Promise<void>) | undefined;
+  private readonly automationHost: BrowserHostAutomation;
   private readonly maxInFlightRequests: number;
   private readonly maxQueuedOutputBytes: number;
   private readonly capability: string;
   private started = false;
 
-  constructor(
-    browserManager: DesktopBrowserManager,
-    options: BrowserHostPipeServerOptions | string = SYNARA_BROWSER_HOST_PIPE_PATH,
-  ) {
-    const normalized = typeof options === "string" ? { pipePath: options } : options;
+  constructor(normalized: BrowserHostPipeServerOptions) {
     this.platform = normalized.platform ?? process.platform;
     this.pipePath = normalized.pipePath ?? SYNARA_BROWSER_HOST_PIPE_PATH;
     const capability = normalized.capability?.trim();
@@ -258,26 +253,12 @@ export class BrowserHostPipeServer {
     this.capability = capability;
     this.maxInFlightRequests = normalized.maxInFlightRequests ?? MAX_IN_FLIGHT_REQUESTS;
     this.maxQueuedOutputBytes = normalized.maxQueuedOutputBytes ?? MAX_QUEUED_OUTPUT_BYTES;
-    const hostOptions = {
-      ...(normalized.requestOpenPanel ? { requestOpenPanel: normalized.requestOpenPanel } : {}),
-      ...(normalized.vault ? { vault: normalized.vault } : {}),
-      ...(normalized.vaultCapture ? { vaultCapture: normalized.vaultCapture } : {}),
-    };
-    if (normalized.automationHost) {
-      this.automationHost = normalized.automationHost;
-      this.disposeAutomationHost = undefined;
-      this.drainAutomationHost = undefined;
-    } else {
-      const automationHost = new DesktopBrowserAutomationHost(browserManager, hostOptions);
-      this.automationHost = automationHost;
-      this.disposeAutomationHost = () => automationHost.dispose();
-      this.drainAutomationHost = () => automationHost.waitForIdle();
-    }
+    this.automationHost = normalized.automationHost;
     this.server = Net.createServer((socket) => this.handleConnection(socket));
   }
 
   async waitForIdle(): Promise<void> {
-    await this.drainAutomationHost?.();
+    await this.automationHost.waitForIdle?.();
   }
 
   async start(): Promise<void> {
@@ -310,7 +291,7 @@ export class BrowserHostPipeServer {
     }
     this.sockets.clear();
     this.clients.clear();
-    await this.disposeAutomationHost?.();
+    await this.automationHost.dispose?.();
     if (this.started) {
       await new Promise<void>((resolve) => this.server.close(() => resolve()));
       this.started = false;

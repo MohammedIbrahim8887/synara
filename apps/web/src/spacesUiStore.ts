@@ -1,3 +1,4 @@
+import { SPACES_ON } from "./betaFeatures";
 import { executionSessionStorage } from "./lib/hosts/executionStorage";
 // FILE: spacesUiStore.ts
 // Purpose: Keeps per-window Space selection and last working-context restoration.
@@ -170,5 +171,5 @@ export const useSpacesUiStore = create<SpacesUiState>((set, get) => ({
 }));
 
 export function readActiveSpaceId(): SpaceId | null {
-  return useSpacesUiStore.getState().activeSpaceId;
+  return SPACES_ON ? useSpacesUiStore.getState().activeSpaceId : null;
 }

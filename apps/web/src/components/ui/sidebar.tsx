@@ -23,7 +23,6 @@ import { Schema } from "effect";
 import { useTranslation } from "~/i18n";
 
 const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_WIDTH_MOBILE = "calc(100vw - var(--spacing(3)))";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_RESIZE_DEFAULT_MIN_WIDTH = 16 * 16;
 
@@ -92,6 +91,13 @@ type SidebarInstanceContextProps = {
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 const SidebarInstanceContext = React.createContext<SidebarInstanceContextProps | null>(null);
+
+/** True for content rendered inside the mobile drawer (the Sheet), never on desktop. */
+const SidebarMobileDrawerContext = React.createContext(false);
+
+function useIsInMobileSidebarDrawer(): boolean {
+  return React.useContext(SidebarMobileDrawerContext);
+}
 
 function useSidebar() {
   const context = React.useContext(SidebarContext);
@@ -297,8 +303,12 @@ function Sidebar({
       <SidebarInstanceContext.Provider value={instanceContextValue}>
         <Sheet onOpenChange={setOpenMobile} open={openMobile} {...props}>
           <SheetPopup
+            // Preserve the tree and its subscriptions instead of rebuilding them on every tap.
+            keepMounted
+            // The popup owns its inline style (nested-dialog vars), so an inline
+            // `--sidebar-width` is dropped and the drawer shrinks to its content.
             className={cn(
-              "w-(--sidebar-width) max-w-none bg-sidebar p-0 text-sidebar-foreground",
+              "w-[calc(100vw-(--spacing(3)))] max-w-none bg-sidebar p-0 text-sidebar-foreground",
               className,
             )}
             data-mobile="true"
@@ -306,17 +316,14 @@ function Sidebar({
             data-slot="sidebar"
             showCloseButton={false}
             side={side}
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              } as React.CSSProperties
-            }
           >
             <SheetHeader className="sr-only">
               <SheetTitle>{t("workspace:sidebar")}</SheetTitle>
               <SheetDescription>{t("workspace:displaysTheMobileSidebar")}</SheetDescription>
             </SheetHeader>
-            <div className={cn("flex h-full w-full flex-col", innerClassName)}>{children}</div>
+            <SidebarMobileDrawerContext.Provider value>
+              <div className={cn("flex h-full w-full flex-col", innerClassName)}>{children}</div>
+            </SidebarMobileDrawerContext.Provider>
           </SheetPopup>
         </Sheet>
       </SidebarInstanceContext.Provider>
@@ -1168,6 +1175,7 @@ export {
   SIDEBAR_OFFCANVAS_MOTION_CLASS,
   SIDEBAR_OFFCANVAS_MOTION_SUPPRESSED_CLASS,
   useSidebar,
+  useIsInMobileSidebarDrawer,
 };
 
 export type { SidebarResizableOptions };

@@ -16,6 +16,8 @@ import {
 } from "../../composerDraftStore";
 import { useComposerSlashCommands } from "../../hooks/useComposerSlashCommands";
 import { extractChatAutomationInvocation } from "../../lib/automationIntent";
+import { shouldAcceptComposerPredictionOnTab } from "../../lib/composerPrediction";
+import type { ComposerPredictionController } from "../../hooks/useComposerPrediction";
 import { syncTerminalContextsByIds, terminalContextIdListsEqual } from "../../lib/terminalContext";
 import {
   promptStillMatchesActiveHistoryBrowse,
@@ -33,6 +35,7 @@ import { useComposerReferences } from "./useComposerReferences";
 import type { ComposerModelSelectionOptions } from "./ComposerModelPicker";
 
 interface ChatComposerCommandsInput {
+  isMobile: boolean;
   threadId: ThreadId;
   composerSelectLockRef: RefObject<boolean>;
   setComposerCommandPicker: Dispatch<SetStateAction<"fork-target" | "review-target" | null>>;
@@ -123,9 +126,13 @@ interface ChatComposerCommandsInput {
   isComposerApprovalState: boolean;
   pendingUserInputs: ReturnType<typeof useChatPendingInteractions>["pendingUserInputs"];
   composerDraft: ReturnType<typeof useChatComposerDraft>["composerDraft"];
+  composerEditorRef: ReturnType<typeof useChatComposerDraft>["composerEditorRef"];
+  /** Present only where composer predictions can show; Tab accepts the visible one. */
+  composerPrediction?: ComposerPredictionController | undefined;
 }
 
 export function useChatComposerCommands({
+  isMobile,
   threadId,
   composerSelectLockRef,
   setComposerCommandPicker,
@@ -176,6 +183,8 @@ export function useChatComposerCommands({
   isComposerApprovalState,
   pendingUserInputs,
   composerDraft,
+  composerEditorRef,
+  composerPrediction,
 }: ChatComposerCommandsInput) {
   const onSelectComposerItem = useCallback(
     (item: ComposerCommandItem) => {
@@ -457,6 +466,9 @@ export function useChatComposerCommands({
       return false;
     }
 
+    // Let Lexical insert a line break on phones, including while a command menu
+    // is open. Sending remains an explicit tap on the send control.
+    if (key === "Enter" && isMobile) return false;
     if (key === "Tab" && event.shiftKey) return false;
 
     const { snapshot, trigger } = resolveActiveComposerTrigger();
@@ -509,6 +521,34 @@ export function useChatComposerCommands({
           onSelectComposerItem(selectedItem);
           return true;
         }
+      }
+    }
+
+    if (key === "Tab" && composerPrediction) {
+      // Re-read the editor and the store at key time: render state may be a frame behind.
+      const editor = composerEditorRef.current;
+      const prediction = composerPrediction.readVisible();
+      if (
+        editor &&
+        prediction &&
+        shouldAcceptComposerPredictionOnTab({
+          event,
+          editorFocused: editor.isFocused(),
+          snapshot: editor.readSnapshot(),
+          prediction,
+          entry: composerPrediction.readEntry(prediction.key),
+        })
+      ) {
+        composerPrediction.accept(prediction);
+        // An ordinary editable draft with the cursor at the end; sending stays a separate
+        // gesture. The focused editor applies the cursor when the controlled value lands.
+        promptRef.current = prediction.suggestion;
+        setPrompt(prediction.suggestion);
+        setComposerCursor(
+          collapseExpandedComposerCursor(prediction.suggestion, prediction.suggestion.length),
+        );
+        setComposerTrigger(null);
+        return true;
       }
     }
 

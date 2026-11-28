@@ -13,6 +13,7 @@ import * as nodePath from "node:path";
 
 import type { ProviderKind, ProviderSkillDescriptor } from "@synara/contracts";
 import YAML from "yaml";
+import { installBuiltinSkills } from "./builtinSkills.ts";
 import { discoverClaudePluginSkillRoots } from "./claudePluginSkills.ts";
 
 type FrontmatterValue = string | boolean;
@@ -436,6 +437,7 @@ export async function ensureSynaraSkillsDir(synaraBaseDir: string): Promise<stri
   }
   try {
     await fs.mkdir(dir, { recursive: true });
+    await installBuiltinSkills(dir);
     ensuredSynaraSkillsDirs.add(dir);
   } catch {
     // Discovery still works without the folder; reads simply return nothing.

@@ -21,6 +21,7 @@ export * from "./browserAutomationToolCatalogue";
 export * from "./browserVault";
 export * from "./browserAnnotations";
 export * from "./ipc";
+export * from "./desktopRpc";
 export * from "./desktopUpdate";
 export * from "./terminal";
 export * from "./provider";
@@ -81,3 +82,7 @@ export * from "./accountBilling";
 export * from "./uiLocale";
 
 export * from "./usageLimit";
+
+export type { LocalConnectionStatus, LocalDeviceInvitation } from "./localConnections";
+
+export * from "./flows";

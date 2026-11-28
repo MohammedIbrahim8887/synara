@@ -20,7 +20,7 @@
 
 import type { WhatsNewEntry } from "./logic";
 
-export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
+const UPSTREAM_RELEASES: readonly WhatsNewEntry[] = [
   {
     version: "1.5.4",
     date: "Nov 14",
@@ -6467,3 +6467,19 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
     ],
   },
 ];
+
+export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = import.meta.env.IS_SONA_RELEASE
+  ? [
+      {
+        version: "0.1.0",
+        date: "Nov 23, 2026",
+        features: [
+          {
+            id: "sona-stable-desktop",
+            title: "First stable Sona desktop release",
+            description: "Install Sona as a standalone app on Apple Silicon Macs.",
+          },
+        ],
+      },
+    ]
+  : UPSTREAM_RELEASES;

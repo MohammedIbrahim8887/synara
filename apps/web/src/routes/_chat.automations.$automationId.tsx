@@ -22,6 +22,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 
 import { getProviderStartOptions, useAppSettings } from "~/appSettings";
+import { MCP_CONNECTORS_ON } from "~/betaFeatures";
 import {
   AutomationNameField,
   AutomationPromptField,
@@ -43,6 +44,7 @@ import {
 } from "~/components/automation/automationInlineFields";
 import { AutomationProposalActions } from "~/components/automation/AutomationProposalActions";
 import { AutomationRiskConfirmPopover } from "~/components/automation/AutomationRiskConfirmPopover";
+import { AutomationToolsPicker } from "~/components/automation/AutomationToolsPicker";
 import {
   CHAT_SURFACE_HEADER_DIVIDER_CLASS_NAME,
   CHAT_SURFACE_HEADER_HEIGHT_CLASS,
@@ -469,7 +471,7 @@ function AutomationDetailView() {
                 title={editDisabledTitle}
               />
               <p className="text-ui-sm text-muted-foreground">
-                Run on {readExecutionContext()?.execution.label ?? "this computer"}. Keep Synara
+                Run on {readExecutionContext()?.execution.label ?? "this computer"}. Keep Sona
                 running on that computer.
               </p>
               <AutomationSaveStatus
@@ -880,6 +882,18 @@ function AutomationDetailView() {
                   disabledTitle={editDisabledTitle}
                   onChange={applyModelSelection}
                 />
+                {MCP_CONNECTORS_ON ? (
+                  <EditRow label={t("automation:tools_label")}>
+                    <AutomationToolsPicker
+                      value={definition.linkedTools ?? []}
+                      onChange={(linkedTools) => patch({ linkedTools })}
+                      disabled={!editable}
+                      title={editDisabledTitle}
+                      align="end"
+                      triggerClassName="gap-1.5 rounded-md px-2 font-normal text-foreground"
+                    />
+                  </EditRow>
+                ) : null}
                 <EditRow label={t("chat:mode_label")}>
                   <span ref={modeAnchorRef} className="flex min-w-0 items-center">
                     <InlineSelect

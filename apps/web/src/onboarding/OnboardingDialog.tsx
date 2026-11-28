@@ -1,5 +1,6 @@
+import { SONA_CLOUD_ACCOUNT_ENABLED } from "@synara/shared/betaFeatures";
 // FILE: OnboardingDialog.tsx
-// Purpose: First-run onboarding as a full-window experience: welcome → agents → tasks →
+// Purpose: First-run onboarding as a full-window experience: welcome → agents → connectors →
 //          pocket → account → pair → ready, over the character-built landscape. Remote
 //          steps appear only when this build can pair a phone; pairing only once signed in.
 //          Owns step navigation and the per-run results the final receipt reads.
@@ -13,6 +14,7 @@ import { ProfileSetupForm } from "~/components/account/OnboardingDialog";
 import { useAnnouncementSheetSlot } from "~/components/announcementSheetSlot";
 import { CHAT_SURFACE_HEADER_HEIGHT_CLASS } from "~/components/chat/chatHeaderControls";
 import { Button } from "~/components/ui/button";
+import { McpConnectorsSettingsPanel } from "~/components/settings/McpConnectorsSettingsPanel";
 import { Dialog, DialogPopup } from "~/components/ui/dialog";
 import { isElectron } from "~/env";
 import { useAccount } from "~/hooks/useAccount";
@@ -38,12 +40,7 @@ import { useOnboardingDialogStore } from "./onboardingDialogStore";
 import { OnboardingScreen } from "./OnboardingScreen";
 import { FitStage } from "./stage/FitStage";
 import { PROVIDER_RING_SIZE, ProviderRing } from "./stage/ProviderRing";
-import {
-  POCKET_STAGE_SIZE,
-  PocketIllustration,
-  TASKS_STAGE_SIZE,
-  TasksIllustration,
-} from "./stage/StageIllustrations";
+import { POCKET_STAGE_SIZE, PocketIllustration } from "./stage/StageIllustrations";
 import { ONBOARDING_STAGE_CARD_CLASS_NAME } from "./stage/stageTokens";
 import { AccountStep } from "./steps/AccountStep";
 import { PairStep } from "./steps/PairStep";
@@ -79,6 +76,7 @@ function OnboardingFlow(props: {
   const { t, formatLocale } = useTranslation();
   const onMac = isMacNavigatorPlatform();
   const remoteAvailable =
+    SONA_CLOUD_ACCOUNT_ENABLED &&
     readExecutionContext()?.controller.capabilities.remoteConnections === true;
 
   const [step, setStep] = useState<OnboardingStep>("welcome");
@@ -146,7 +144,12 @@ function OnboardingFlow(props: {
         windowControlsGutterClassName,
       )}
     >
-      <img src="/app-icons/dark.png" alt="" className="size-[26px] shrink-0" draggable={false} />
+      <img
+        src="/branding/sona-logo.png"
+        alt=""
+        className="size-[26px] shrink-0"
+        draggable={false}
+      />
       <span className="text-ui-lg font-medium tracking-[-0.01em] text-foreground">
         {APP_BASE_NAME}
       </span>
@@ -234,21 +237,20 @@ function OnboardingFlow(props: {
             <ProvidersStep detection={providerDetection} setup={providerSetup} />
           </OnboardingScreen>
         );
-      case "tasks":
+      case "connectors":
         return (
           <OnboardingScreen
             number={stepNumber}
-            lead={t("onboarding:tasksLead")}
-            statement={t("onboarding:tasksStatement")}
-            description={t("onboarding:tasksDescription", { app: APP_BASE_NAME })}
+            numberSuffix={t("onboarding:optional")}
+            lead={t("onboarding:connectorsLead")}
+            statement={t("onboarding:connectorsStatement")}
+            description={t("onboarding:connectorsDescription")}
+            stageClassName="bg-background/90"
             secondary={{ label: t("common:app_back"), onClick: goBack }}
             primary={{ label: t("git:continue"), onClick: goNext }}
-            stageClassName="overflow-hidden"
           >
-            <div className="size-full px-8 py-10">
-              <FitStage {...TASKS_STAGE_SIZE}>
-                <TasksIllustration />
-              </FitStage>
+            <div className="px-8 py-8">
+              <McpConnectorsSettingsPanel active />
             </div>
           </OnboardingScreen>
         );

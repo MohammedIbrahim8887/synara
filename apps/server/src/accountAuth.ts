@@ -48,7 +48,7 @@ import {
 import { decodeJwtClaims } from "./jwtClaims";
 import { isLoopbackHost, isWildcardHost } from "./startupAccess";
 import { resolveTailscaleEndpoint } from "./tailscaleEndpoint";
-import serverPackageJson from "../package.json" with { type: "json" };
+import { buildVersion } from "./buildVersion";
 
 // Re-exported so CLI wiring keeps naming the variable through the module that
 // owns the auth flows; the value itself lives with the client that reads it.
@@ -1110,7 +1110,7 @@ async function linkThisHost(
 
   const environmentId = await resolveEnvironmentId(options.baseDir, options.devUrl);
   const name = options.hostname ?? OS.hostname();
-  const appVersion = options.appVersion ?? serverPackageJson.version;
+  const appVersion = options.appVersion ?? buildVersion;
   const { hostIdentityPath } = await runWithPath(
     deriveServerPaths(options.baseDir, options.devUrl),
   );
@@ -1401,7 +1401,7 @@ export async function runDeviceCodeHostLink(options: AccountFlowOptions): Promis
     nonce: challenge.nonce,
     name,
     platform,
-    appVersion: options.appVersion ?? serverPackageJson.version,
+    appVersion: options.appVersion ?? buildVersion,
   });
   const linked = await client.completeHostLink({ challengeId: challenge.challengeId, proof });
   const instance = await client.instance();

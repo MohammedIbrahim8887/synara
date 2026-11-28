@@ -44,6 +44,8 @@ import {
 import { isElectron } from "~/env";
 import { CentralIcon } from "~/lib/central-icons";
 import { readNativeApi } from "~/nativeApi";
+import { useSonaDesktop } from "~/sonaDesktop";
+import { SonaBrowserStreamSurface } from "./SonaBrowserStreamSurface";
 import { BrowserVaultButton } from "./BrowserVault";
 import type { DockPaneRuntimeMode } from "~/lib/dockPaneActivation";
 import { readDesktopZoomFactor, subscribeDesktopZoomFactor } from "~/lib/desktopZoom";
@@ -112,7 +114,7 @@ const BROWSER_BOUNDS_SYNC_BURST_FRAMES = 30;
 const BROWSER_BOUNDS_SYNC_STABLE_FRAME_TARGET = 2;
 const BROWSER_WEBVIEW_PARTITION = "persist:synara-browser";
 const BROWSER_PERF_SAMPLE_INTERVAL_MS = 5_000;
-const SYNARA_BROWSER_LABEL = "Synara browser";
+const SYNARA_BROWSER_LABEL = "Sona browser";
 const browserPanelHideScheduler = createBrowserPanelHideScheduler();
 const browserPanelRendererHandoff = createBrowserPanelRendererHandoff();
 const BROWSER_ACTION_MENU_PANEL_CLASS_NAME = "w-52 min-w-52";
@@ -687,6 +689,9 @@ export function BrowserPanel({
     null;
   const activeTabId = activeTab?.id ?? null;
   const usesNativeRuntime = activeTab?.runtimeSurface === "native";
+  // Sona streams its owned Chromium into the pane instead of a native view.
+  const sonaDesktop = useSonaDesktop();
+  const streamsSonaBrowser = Boolean(sonaDesktop?.browserPane) && !isElectron;
   const rendererHasPopup =
     threadBrowserState?.tabs.some(
       (tab) =>
@@ -820,7 +825,7 @@ export function BrowserPanel({
     return api.browser.onState((state) => {
       upsertThreadState(state);
     });
-  }, [api, isLiveRuntime, upsertThreadState]);
+  }, [api, isLiveRuntime, streamsSonaBrowser, upsertThreadState]);
 
   useEffect(() => {
     if (!api || !isLiveRuntime) {
@@ -860,7 +865,7 @@ export function BrowserPanel({
         void api.browser.hide({ threadId });
       });
     };
-  }, [api, isLiveRuntime, runBrowserAction, threadId, upsertThreadState]);
+  }, [api, isLiveRuntime, runBrowserAction, streamsSonaBrowser, threadId, upsertThreadState]);
 
   useEffect(() => {
     const activeTabId = activeTab?.id ?? null;
@@ -2050,7 +2055,17 @@ export function BrowserPanel({
                   isFloatingMode && "rounded-[10px] [clip-path:inset(0_round_10px)]",
                   "inset-0",
                 )}
-              />
+              >
+                {streamsSonaBrowser &&
+                workspaceReady &&
+                activeTabId &&
+                usesNativeRuntime &&
+                !isFloatingMode &&
+                !showLocalServersHome &&
+                !browserPageError ? (
+                  <SonaBrowserStreamSurface tabId={activeTabId} />
+                ) : null}
+              </div>
             ) : null}
             {isLiveRuntime && browserPageError ? (
               <BrowserRuntimeError message={browserPageError} onReload={onReloadActiveTab} />

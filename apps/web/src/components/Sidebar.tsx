@@ -1,3 +1,4 @@
+import { APP_BASE_NAME } from "~/branding";
 import {
   dispatchSelectedWorkspaceChatCreation,
   openWorkspacePath,
@@ -63,6 +64,7 @@ import {
   PinIcon,
   PlayIcon,
   SearchIcon,
+  SettingsIcon,
   StopFilledIcon,
   TemporaryThreadIcon,
   TerminalIcon,
@@ -327,7 +329,11 @@ import {
 import { SidebarLeadingIcon } from "./SidebarLeadingIcon";
 import { SidebarPrimaryAction } from "./SidebarPrimaryAction";
 import { RailAutomationsPanel } from "./RailAutomationsPanel";
-import { SIDEBAR_PANEL_TITLE_CLASS_NAME, SidebarPanelTitle } from "./SidebarPanelTitle";
+import {
+  SIDEBAR_PANEL_TITLE_CLASS_NAME,
+  SidebarMobileCloseButton,
+  SidebarPanelTitle,
+} from "./SidebarPanelTitle";
 import { SidebarMetaChipStack } from "./SidebarMetaChip";
 import { SidebarRowHoverActions } from "./SidebarRowHoverActions";
 import { SidebarSectionToolbar } from "./SidebarSectionToolbar";
@@ -355,7 +361,7 @@ import { RenameThreadDialog } from "./RenameThreadDialog";
 import { SnoozeUntilDialog } from "./SnoozeUntilDialog";
 import { SNOOZE_PRESETS } from "../lib/threadSnooze";
 import ReleaseHistoryDialog from "./ReleaseHistoryDialog";
-import { GROUPS_ON, INBOX_ON, isBetaFeatureOn } from "../betaFeatures";
+import { GROUPS_ON, INBOX_ON, SPACES_ON, isBetaFeatureOn } from "../betaFeatures";
 import { WHATS_NEW_ENTRIES } from "../whatsNew/entries";
 import { sortEntriesByVersionDesc } from "../whatsNew/logic";
 import { SidebarSearchPalette, type SidebarSearchPaletteMode } from "./SidebarSearchPalette";
@@ -418,6 +424,7 @@ import {
 } from "./ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 import {
+  useSidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -533,7 +540,6 @@ import {
   SIDEBAR_ROW_LABEL_TEXT_CLASS_NAME,
   SIDEBAR_SECTION_LABEL_CLASS_NAME,
 } from "../sidebarRowStyles";
-import { AccountFooterControl } from "./account/AccountFooterControl";
 import { SettingsSidebarNav } from "./SettingsSidebarNav";
 import { ComposerPickerMenuPopup } from "./chat/ComposerPickerMenuPopup";
 import { selectSplitView, useSplitViewStore } from "../splitViewStore";
@@ -1292,7 +1298,7 @@ export function SidebarActivityBellButton({
 }
 
 const SIDEBAR_SURFACE_PICKER_COPY: Record<SidebarView, { title: string; description: string }> = {
-  threads: { title: "Synara", description: "workspace:buildDebugShip" },
+  threads: { title: APP_BASE_NAME, description: "workspace:buildDebugShip" },
   groups: { title: "common:hubs", description: "workspace:coordinatedAcrossRepos" },
 };
 
@@ -1379,6 +1385,24 @@ export function SidebarSurfacePicker({
 /** Pinned rows sit flush (`px-2`), with no gutter before the glyph. */
 const PINNED_ROW_PADDING_PX = 8;
 
+function SidebarSettingsButton({ active }: { active: boolean }) {
+  const { setOpenMobile } = useSidebar();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  return (
+    <SidebarMenuButton
+      isActive={active}
+      onClick={() => {
+        setOpenMobile(false);
+        void navigate({ to: "/settings", search: { section: "general" } });
+      }}
+    >
+      <SettingsIcon aria-hidden />
+      <span>{t("workspace:toast_settings")}</span>
+    </SidebarMenuButton>
+  );
+}
+
 export default function Sidebar() {
   const { t, formatLocale } = useTranslation();
 
@@ -1397,12 +1421,18 @@ export default function Sidebar() {
   const pendingActiveSpaceId = useSpacesUiStore(
     (store) => store.pendingActiveSpace?.spaceId ?? null,
   );
-  const activeSpaceId = resolveActiveSpaceId(storedActiveSpaceId, spaces, pendingActiveSpaceId);
+  const activeSpaceId = SPACES_ON
+    ? resolveActiveSpaceId(storedActiveSpaceId, spaces, pendingActiveSpaceId)
+    : null;
   const threadsHydrated = useStore((store) => store.threadsHydrated);
   // Nav destinations live in the rail (portaled next to this panel) and the panel shows
   // Home or Spaces.
   const isMobile = useIsMobile();
-  const railActiveItem = useRailShellStore((store) => store.activeItem);
+  const railActiveItem = useRailShellStore((store) =>
+    isBetaFeatureOn(store.activeItem === "studio" ? "groups" : store.activeItem)
+      ? store.activeItem
+      : "home",
+  );
   const railPanelView = useRailShellStore((store) => store.panelView);
   const railSpacesProjectId = useRailShellStore((store) => store.spacesProjectId);
   const selectRailPanelItem = useRailShellStore((store) => store.selectPanelItem);
@@ -1463,7 +1493,8 @@ export default function Sidebar() {
   const isOnSettings = workspaceSurfacePath === "/settings";
   const isOnKanban = workspaceSurfacePath.startsWith("/kanban");
   const isOnTasks = workspaceSurfacePath.startsWith("/tasks");
-  const isOnAutomations = workspaceSurfacePath.startsWith("/automations");
+  const isOnAutomations =
+    workspaceSurfacePath.startsWith("/automations") || workspaceSurfacePath === "/flows";
   const isOnPullRequests = workspaceSurfacePath.startsWith("/pull-requests");
   const isOnInbox = workspaceSurfacePath.startsWith("/inbox");
   // Lightweight read of automations to drive the sidebar count badge. Shares the
@@ -2102,6 +2133,7 @@ export default function Sidebar() {
   );
   const filterThreadsToActiveSpace = useCallback(
     (threads: readonly SidebarThreadSummary[]) => {
+      if (!SPACES_ON) return [...threads];
       const state = useStore.getState();
       const selection = useSpacesUiStore.getState();
       return filterSidebarThreadsBySpace({
@@ -3051,7 +3083,10 @@ export default function Sidebar() {
   }, [setCreateProjectDialogOpen]);
 
   const activeSpaceProjects = useMemo(
-    () => ordinarySpaceProjects.filter((project) => (project.spaceId ?? null) === activeSpaceId),
+    () =>
+      ordinarySpaceProjects.filter(
+        (project) => !SPACES_ON || (project.spaceId ?? null) === activeSpaceId,
+      ),
     [activeSpaceId, ordinarySpaceProjects],
   );
   const currentProjectShortcutTargetId = useMemo(
@@ -4917,9 +4952,10 @@ export default function Sidebar() {
             ? section !== "studio"
             : section === undefined ||
               section === "studio" ||
-              (remoteProjectSpaces.get(
-                checkoutKey({ environmentId, projectId: thread.projectId }),
-              ) ?? null) !== activeSpaceId)
+              (SPACES_ON &&
+                (remoteProjectSpaces.get(
+                  checkoutKey({ environmentId, projectId: thread.projectId }),
+                ) ?? null) !== activeSpaceId))
         )
           return [];
         return [
@@ -4953,7 +4989,7 @@ export default function Sidebar() {
   const remoteProjectsBySpace = useMemo(() => {
     const projectsBySpace = new Map<SpaceId | null, WorkspaceProjectEntry[]>();
     for (const entry of remoteProjects) {
-      const spaceId = remoteProjectSpaces.get(entry.key) ?? null;
+      const spaceId = SPACES_ON ? (remoteProjectSpaces.get(entry.key) ?? null) : null;
       const entries = projectsBySpace.get(spaceId);
       if (entries) entries.push(entry);
       else projectsBySpace.set(spaceId, [entry]);
@@ -5259,7 +5295,10 @@ export default function Sidebar() {
     return activity;
   }, [allStandardProjectsBase, resolveThreadStatusForSidebar, statusThreadsByProjectId]);
   const standardProjectsBase = useMemo(
-    () => allStandardProjectsBase.filter((project) => (project.spaceId ?? null) === activeSpaceId),
+    () =>
+      allStandardProjectsBase.filter(
+        (project) => !SPACES_ON || (project.spaceId ?? null) === activeSpaceId,
+      ),
     [activeSpaceId, allStandardProjectsBase],
   );
   const pinnedProjectIds = useMemo(
@@ -5690,7 +5729,7 @@ export default function Sidebar() {
 
   const showRailAutomationsPanel = isOnAutomations;
   const showRailSpacesPanel =
-    railPanelView === "spaces" && !isOnGroups && !isOnSettings && !activityViewEnabled;
+    SPACES_ON && railPanelView === "spaces" && !isOnGroups && !isOnSettings && !activityViewEnabled;
   const workspaceProjectThreadData = useMemo(
     () =>
       new Map(
@@ -5975,7 +6014,7 @@ export default function Sidebar() {
   }, [activeSidebarThreadId, visibleSidebarThreadIds]);
 
   // Pinned rows share the thread-container label rule (project name, or
-  // "Synara" for project-less chats) with the hover cards and Activity rows.
+  // APP_BASE_NAME for project-less chats) with the hover cards and Activity rows.
   function resolvePinnedThreadProjectLabel(projectId: ProjectId): string {
     return resolveThreadProjectLabel(projectById.get(projectId));
   }
@@ -7331,6 +7370,7 @@ export default function Sidebar() {
         return;
       }
       if (command === "space.previous" || command === "space.next") {
+        if (!SPACES_ON) return;
         if (!isProjectsSidebarSurface({ isOnSettings, isOnGroups })) return;
         event.preventDefault();
         event.stopPropagation();
@@ -7346,6 +7386,7 @@ export default function Sidebar() {
       }
       const spaceJumpIndex = spaceJumpIndexFromCommand(command ?? "");
       if (spaceJumpIndex !== null) {
+        if (!SPACES_ON) return;
         if (!isProjectsSidebarSurface({ isOnSettings, isOnGroups })) return;
         // Index 0 is Void, then spaces in strip order — the chord addresses what you see.
         const orderedSpaceIds: ReadonlyArray<SpaceId | null> = [
@@ -8076,6 +8117,7 @@ export default function Sidebar() {
   }
   const railShortcutItems: AppRailItem[] = railShortcuts.flatMap((shortcut): AppRailItem[] => {
     if (shortcut.kind === "space") {
+      if (!SPACES_ON) return [];
       return [
         {
           id: shortcut.key,
@@ -8105,8 +8147,9 @@ export default function Sidebar() {
         active: activeRailShortcutKey === shortcut.key,
         onSelect: () => {
           setActivityViewEnabledSmoothly(false);
-          selectRailPanelItem("spaces");
-          openRailSpacesProject(project.id);
+          selectRailPanelItem(SPACES_ON ? "spaces" : "home");
+          if (SPACES_ON) openRailSpacesProject(project.id);
+          else setProjectExpanded(project.id, true);
           if (!isOnThreadsSection) handleSidebarViewChange("threads");
         },
       },
@@ -8114,10 +8157,14 @@ export default function Sidebar() {
   });
   const railMoreMenu = (
     <AppRailMoreMenu
-      spaces={[null, ...spaces.map((space) => space.id)].map((spaceId) => ({
-        key: railSpaceShortcutKey(spaceId),
-        label: spaceDisplayName(spaceId, spaces, voidSpace, t),
-      }))}
+      spaces={
+        SPACES_ON
+          ? [null, ...spaces.map((space) => space.id)].map((spaceId) => ({
+              key: railSpaceShortcutKey(spaceId),
+              label: spaceDisplayName(spaceId, spaces, voidSpace, t),
+            }))
+          : []
+      }
       projects={allStandardProjectsBase.map((project) => ({
         key: railProjectShortcutKey(project.id),
         label: resolveSidebarProjectRowLabel(project),
@@ -8253,7 +8300,6 @@ export default function Sidebar() {
             onClick={handleDesktopUpdateButtonClick}
           />
         ) : null}
-        <AccountFooterControl />
       </>
     ),
     onContextMenu: handleNavContextMenu,
@@ -8399,6 +8445,7 @@ export default function Sidebar() {
                       />
                     ) : null}
                     {betaBadge}
+                    <SidebarMobileCloseButton />
                   </div>
                 </div>
                 {/* The keyed content remounts with a short enter animation while the picker
@@ -8510,25 +8557,27 @@ export default function Sidebar() {
                     renderRailSpacesPanel()
                   ) : (
                     <SidebarGroup className="px-1.5 py-1.5">
-                      <SpaceSwitcher
-                        spaces={spaces}
-                        activeSpaceId={activeSpaceId}
-                        activityBySpaceId={spaceActivityById}
-                        voidSpace={voidSpace}
-                        onSelect={handleSelectSpace}
-                        onCreate={() => openSpaceCreator()}
-                        onEdit={(space) => openSpaceEditor(space.id)}
-                        onDelete={(space) => void handleDeleteSpace(space.id)}
-                        onReorder={handleReorderSpaces}
-                        onRenameSpace={(space, name) => void handleRenameSpace(space, name)}
-                        onEditVoid={openVoidEditor}
-                        onRenameVoid={handleRenameVoid}
-                        onResetVoid={resetVoidSpace}
-                        onDropProject={(projectId, spaceId) =>
-                          void handleMoveProjectToSpace(projectId, spaceId)
-                        }
-                        jumpShortcutLabelForTab={jumpShortcutLabelForSpaceTab}
-                      />
+                      {SPACES_ON && (
+                        <SpaceSwitcher
+                          spaces={spaces}
+                          activeSpaceId={activeSpaceId}
+                          activityBySpaceId={spaceActivityById}
+                          voidSpace={voidSpace}
+                          onSelect={handleSelectSpace}
+                          onCreate={() => openSpaceCreator()}
+                          onEdit={(space) => openSpaceEditor(space.id)}
+                          onDelete={(space) => void handleDeleteSpace(space.id)}
+                          onReorder={handleReorderSpaces}
+                          onRenameSpace={(space, name) => void handleRenameSpace(space, name)}
+                          onEditVoid={openVoidEditor}
+                          onRenameVoid={handleRenameVoid}
+                          onResetVoid={resetVoidSpace}
+                          onDropProject={(projectId, spaceId) =>
+                            void handleMoveProjectToSpace(projectId, spaceId)
+                          }
+                          jumpShortcutLabelForTab={jumpShortcutLabelForSpaceTab}
+                        />
+                      )}
                       {renderPinnedThreadsSection()}
                       {renderListSectionHeader(
                         t("workspace:sections_projects"),
@@ -8790,10 +8839,13 @@ export default function Sidebar() {
           </SidebarContent>
 
           <SidebarFooter
-            // Help and the update button live in the rail; the footer only carries debug tools.
+            // Keep Settings reachable independently of account controls.
             className="gap-2 border-sidebar-border border-t-0 p-2 pt-0 font-system-ui"
           >
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarSettingsButton active={isOnSettings} />
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <div className="flex flex-col gap-1">
                   {DebugFeatureFlagsMenu && showDebugFeatureFlagsMenu && !isOnSettings ? (
@@ -9301,7 +9353,13 @@ export default function Sidebar() {
               setSearchPaletteMode("search");
             }
           }}
-          actions={[...searchPaletteActions, ...searchPaletteNavigationActions]}
+          actions={[
+            ...searchPaletteActions.filter(
+              (action) =>
+                SPACES_ON || (action.id !== "new-space" && !action.id.startsWith("switch-space-")),
+            ),
+            ...searchPaletteNavigationActions,
+          ]}
           projects={searchPaletteProjects}
           projectById={projectById}
           onCreateChat={() => void handleCreatePaletteChat()}

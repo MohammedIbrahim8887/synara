@@ -279,7 +279,12 @@ export function IosNotificationBanner(props: { readonly title: string; readonly 
   const { t } = useTranslation();
   return (
     <div className="flex gap-[12px] rounded-[26px] border border-white/10 bg-[#2c2c2e]/90 p-[14px] shadow-[0_18px_40px_rgb(0_0_0/0.5)] backdrop-blur-xl">
-      <img src="/app-icons/dark.png" alt="" className="size-[40px] shrink-0" draggable={false} />
+      <img
+        src="/branding/sona-logo.png"
+        alt=""
+        className="size-[40px] shrink-0"
+        draggable={false}
+      />
       <span className="flex min-w-0 flex-1 flex-col text-[15px] leading-[20px]">
         <span className="flex items-baseline justify-between">
           <span className="font-semibold">{props.title}</span>

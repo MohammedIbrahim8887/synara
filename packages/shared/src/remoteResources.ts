@@ -6,6 +6,7 @@ import {
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
 } from "@synara/contracts";
 import { Schema } from "effect";
+import { LOCAL_PREVIEW_PLAYABLE_PARAM } from "./localPreviewFiles";
 
 export const REMOTE_RESOURCE_PATH = "/v2/resource";
 export const REMOTE_RESOURCE_LOCAL_PREFIX = "/api/remote/resource/";
@@ -49,6 +50,7 @@ export function remoteResourceRoute(resource: RemoteResource): {
         ...(resource.grant ? { grant: resource.grant } : {}),
         ...(resource.revision ? { v: resource.revision } : {}),
         ...(resource.download ? { download: "1" } : {}),
+        ...(resource.playable ? { [LOCAL_PREVIEW_PLAYABLE_PARAM]: resource.playable } : {}),
       };
       break;
     case "thread-export":

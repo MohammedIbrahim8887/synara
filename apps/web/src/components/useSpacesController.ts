@@ -1,3 +1,4 @@
+import { SPACES_ON } from "../betaFeatures";
 // FILE: useSpacesController.ts
 // Purpose: All Space selection, editing, deletion, and assignment behavior behind the sidebar.
 // Layer: Sidebar controller hook
@@ -124,7 +125,7 @@ export function useSpacesController(input: {
   );
 
   useEffect(() => {
-    if (!threadsHydrated) return;
+    if (!SPACES_ON || !threadsHydrated) return;
     reconcileSpacesUi({
       activeSpaceIds: new Set(spaces.map((space) => space.id)),
       snapshotSequence: shellSnapshotSequence,
@@ -489,9 +490,10 @@ export function useSpacesController(input: {
   );
   const closeSpaceProjectPicker = useCallback(() => setSpaceProjectPickerTargetId(null), []);
 
-  const activeSpace: Space | null = activeSpaceId
-    ? (spaces.find((space) => space.id === activeSpaceId) ?? null)
-    : null;
+  const activeSpace: Space | null =
+    SPACES_ON && activeSpaceId
+      ? (spaces.find((space) => space.id === activeSpaceId) ?? null)
+      : null;
   const editedSpace: Space | null =
     spaceEditorState?.mode === "edit"
       ? (spaces.find((space) => space.id === spaceEditorState.spaceId) ?? null)

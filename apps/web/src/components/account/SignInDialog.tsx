@@ -17,7 +17,7 @@ import { Dialog, DialogPopup, DialogTitle } from "~/components/ui/dialog";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "~/components/ui/input-group";
 import { Kbd } from "~/components/ui/kbd";
 import { Spinner } from "~/components/ui/spinner";
-import { SynaraLogo } from "@synara/profile-ui/logo";
+import { SynaraLogo } from "~/components/SonaLogo";
 import { useAccount } from "~/hooks/useAccount";
 import { useNowMs } from "~/hooks/useNowMs";
 import {
@@ -331,7 +331,7 @@ export function SignInPanel({ onSignedIn, onDismiss, variant = "dialog" }: SignI
     return (
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2.5 pb-1">
-          <img src="/app-icons/dark.png" alt="" className="size-7 shrink-0" draggable={false} />
+          <img src="/branding/sona-logo.png" alt="" className="size-7 shrink-0" draggable={false} />
           <SignInPanelTitle variant={variant}>Sign in to Synara</SignInPanelTitle>
         </div>
         {ssoWaiting ?? (

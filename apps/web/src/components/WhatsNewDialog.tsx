@@ -9,7 +9,7 @@
 import { useState } from "react";
 
 import { ArrowLeftIcon, ArrowRightIcon } from "~/lib/icons";
-import { SynaraLogo } from "@synara/profile-ui/logo";
+import { SynaraLogo } from "~/components/SonaLogo";
 
 import { ChangelogAccordion } from "../whatsNew/ChangelogAccordion";
 import { FeatureSection } from "../whatsNew/FeatureSection";

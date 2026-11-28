@@ -258,7 +258,7 @@ describe("createOrRecoverProjectFromPath", () => {
     );
   });
 
-  it("preserves an optimistically selected space before the shell snapshot catches up", async () => {
+  it("ignores a retained active space when creating a project after Spaces removal", async () => {
     const activeSpaceId = SpaceId.makeUnsafe("space-new");
     useSpacesUiStore.getState().setActiveSpaceId(activeSpaceId);
     let createdProjectId: ProjectId | null = null;
@@ -278,7 +278,7 @@ describe("createOrRecoverProjectFromPath", () => {
     expect(dispatchCommand).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "project.create",
-        spaceId: activeSpaceId,
+        spaceId: null,
       }),
     );
   });

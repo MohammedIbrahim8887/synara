@@ -279,7 +279,7 @@ function AddDeviceDialogContent({
                 <span className="font-mono font-medium text-foreground">
                   {invitation.code}
                 </span> in
-                Synara on your phone or iPad.
+                Sona on your phone or iPad.
               </p>
             ) : null}
             {invitation && remaining && tab === "computer" ? (

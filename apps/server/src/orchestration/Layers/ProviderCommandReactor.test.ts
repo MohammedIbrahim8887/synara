@@ -590,6 +590,7 @@ describe("ProviderCommandReactor", () => {
     readonly gitWritingModelSelection?: ModelSelection;
     readonly omitStopRuntimeSession?: boolean;
     readonly serverSettings?: DeepPartial<ServerSettings>;
+    readonly flowGitExecute?: GitCoreShape["execute"];
     readonly confirmNativeResume?: (resumeCursor: unknown) => boolean;
     readonly generateThreadTitle?: TextGenerationShape["generateThreadTitle"];
     readonly computerService?: ComputerServiceShape;
@@ -1084,6 +1085,7 @@ describe("ProviderCommandReactor", () => {
       Layer.provideMerge(Layer.succeed(CheckpointStore, checkpointStore)),
       Layer.provideMerge(
         Layer.succeed(GitCore, {
+          execute: input?.flowGitExecute,
           renameBranch,
           publishBranch,
           withMutation,
@@ -1469,6 +1471,113 @@ describe("ProviderCommandReactor", () => {
       interceptEngineDispatch,
     };
   }
+
+  it.each([false, true])(
+    "enforces a worktree rule before provider dispatch (linked=%s)",
+    async (linked) => {
+      const harness = await createHarness({
+        serverSettings: {
+          flows: [
+            {
+              id: "worktree",
+              name: "Use a worktree",
+              kind: "rule",
+              enabled: true,
+              projectId: "",
+              nodes: [
+                {
+                  id: "gate",
+                  kind: "require-worktree",
+                  label: "Use a worktree",
+                  value: "",
+                  position: { x: 0, y: 0 },
+                },
+              ],
+              edges: [],
+            },
+          ],
+        },
+        flowGitExecute: ({ args }) =>
+          Effect.succeed({
+            code: 0,
+            stdout:
+              args[0] === "rev-parse"
+                ? linked
+                  ? "/repo/.git/worktrees/task\n/repo/.git\n"
+                  : "/repo/.git\n/repo/.git\n"
+                : "feature/task\n",
+            stderr: "",
+            stdoutTruncated: false,
+            stderrTruncated: false,
+          }),
+      });
+      await dispatchHarnessUserTurn(harness, {
+        messageId: "rule-gate",
+        text: "Implement the feature",
+        createdAt: new Date().toISOString(),
+      });
+      if (linked) await waitFor(() => harness.sendTurn.mock.calls.length === 1);
+      else {
+        await waitFor(async () => (await readHarnessThread(harness))?.session?.status === "error");
+        expect(harness.sendTurn).not.toHaveBeenCalled();
+        expect((await readHarnessThread(harness))?.session?.lastError).toContain("worktree");
+      }
+    },
+  );
+
+  it("inlines standing rules and expands workflow invocations before provider dispatch", async () => {
+    const harness = await createHarness({
+      serverSettings: {
+        flows: [
+          {
+            id: "standing",
+            name: "Standing",
+            kind: "rule",
+            enabled: true,
+            projectId: "",
+            nodes: [
+              {
+                id: "rule",
+                kind: "instruction",
+                label: "Rule",
+                value: "Always explain validation.",
+                position: { x: 0, y: 0 },
+              },
+            ],
+            edges: [],
+          },
+          {
+            id: "review",
+            name: "Review",
+            kind: "workflow",
+            enabled: true,
+            projectId: "",
+            nodes: [
+              {
+                id: "step",
+                kind: "instruction",
+                label: "Review",
+                value: "Review the changed files.",
+                position: { x: 0, y: 0 },
+              },
+            ],
+            edges: [],
+          },
+        ],
+      },
+    });
+    await dispatchHarnessUserTurn(harness, {
+      messageId: "workflow-call",
+      text: "/workflow review Focus on correctness.",
+      createdAt: new Date().toISOString(),
+    });
+    await waitFor(() => harness.sendTurn.mock.calls.length === 1);
+    const prompt = harness.sendTurn.mock.calls[0]![0].input;
+    expect(prompt).toContain("Always explain validation.");
+    expect(prompt).toContain("Review the changed files.");
+    expect(prompt).toContain("Focus on correctness.");
+    expect(prompt).not.toContain("/workflow review");
+  });
 
   describe("usage-limit continuation delivery", () => {
     const threadId = ThreadId.makeUnsafe("thread-1");
@@ -23017,6 +23126,8 @@ describe("ProviderCommandReactor", () => {
   );
 
   it("restarts a live coordinator session when the group loses the flag", async () => {
+    // Retained coordinator behavior is tested independently of Sona's product gate.
+    vi.spyOn(groupsBetaGate, "isServerGroupsEnabled").mockReturnValue(true);
     const coordinatorConfigState: {
       enabled?: boolean;
       pausedAt?: string | null;

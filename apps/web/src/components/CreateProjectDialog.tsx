@@ -1,3 +1,4 @@
+import { SPACES_ON } from "../betaFeatures";
 import { readExecutionContext } from "../lib/hosts/executionContext";
 import { appHistory } from "../appNavigation";
 import { ComputerPicker, useWorkspaceComputers } from "./hosts/ComputerPicker";
@@ -373,7 +374,9 @@ export function CreateProjectDialog(props: {
     const abortController = new AbortController();
     submitAbortRef.current = abortController;
     try {
-      const spaceId = spaces.find((space) => space.id === selectedSpaceKey)?.id ?? null;
+      const spaceId = SPACES_ON
+        ? (spaces.find((space) => space.id === selectedSpaceKey)?.id ?? null)
+        : null;
       if (source === "github") {
         const operationId = randomUUID();
         activeOperationIdRef.current = operationId;
@@ -694,7 +697,7 @@ export function CreateProjectDialog(props: {
             />
           )}
 
-          {!remote ? (
+          {SPACES_ON && !remote ? (
             <div className="space-y-2">
               <span
                 id={spaceLabelId}

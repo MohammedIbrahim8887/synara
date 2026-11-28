@@ -3,6 +3,7 @@
 // Layer: Shared contracts (consumed by desktop main, server, and web UI)
 
 import {
+  SONA_PRODUCTION_BUNDLE_ID,
   SYNARA_BETA_BUNDLE_ID,
   SYNARA_CANARY_BUNDLE_ID,
   SYNARA_CUA_BUNDLE_ID,
@@ -19,14 +20,14 @@ import {
  */
 export type BetaOnlyFeature = string;
 
-/** Hubs (Stable and Beta): the coordinator, its threads, the Hub panel and Library. */
+/** Hubs (retained data only): the coordinator, its threads, the Hub panel and Library. */
 export const GROUPS_BETA_FEATURE = "groups";
 
-/** Inbox (Stable and Beta): the Inbox page and its `stats.getRecap` RPC. */
+/** Inbox (retained data only): the Inbox page and its `stats.getRecap` RPC. */
 export const INBOX_BETA_FEATURE = "inbox";
 
 /**
- * Account-saved Inbox history (Stable and Beta): automatic private recap upload
+ * Account-saved Inbox history (retained data only): automatic private recap upload
  * to the account and the saved-recap RPCs.
  */
 export const ACCOUNT_INBOX_BETA_FEATURE = "accountInbox";
@@ -60,8 +61,18 @@ export const NATIVE_EDITOR_BETA_FEATURE = "native-editor";
 
 export const BETA_ONLY_FEATURES: readonly BetaOnlyFeature[] = [];
 
+/** Removed from Sona in every channel; persisted records remain intact. */
+export const REMOVED_PRODUCT_FEATURES: ReadonlySet<string> = new Set([
+  "groups",
+  "inbox",
+  "accountInbox",
+  "tasks",
+  "kanban",
+  "spaces",
+]);
+
 /**
- * Whether a Beta-only feature is on for this host. Only the Stable
+ * Whether a feature is on for this host. Removed features are always off. Only the Stable
  * (production) desktop build turns them off: Beta, Remote, Cua, Canary, development
  * and non-desktop hosts (flavor "unknown") keep them.
  */
@@ -69,7 +80,10 @@ export function isBetaFeatureEnabled(
   feature: BetaOnlyFeature,
   flavor: SynaraDesktopFlavor | "unknown",
 ): boolean {
-  return !BETA_ONLY_FEATURES.includes(feature) || flavor !== "production";
+  return (
+    !REMOVED_PRODUCT_FEATURES.has(feature) &&
+    (!BETA_ONLY_FEATURES.includes(feature) || flavor !== "production")
+  );
 }
 
 /** Maps a desktop bundle id to its flavor; blank or unrecognized -> "unknown". */
@@ -77,6 +91,7 @@ export function desktopFlavorFromBundleId(
   bundleId: string | undefined,
 ): SynaraDesktopFlavor | "unknown" {
   switch (bundleId?.trim()) {
+    case SONA_PRODUCTION_BUNDLE_ID:
     case SYNARA_PRODUCTION_BUNDLE_ID:
       return "production";
     case SYNARA_DEVELOPMENT_BUNDLE_ID:
@@ -122,3 +137,6 @@ export function desktopFlavorFromProtocol(
 
 /** Deferred features retain their data but have no active consumers. */
 export const HOST_SECRETS_SYNC_ENABLED = false;
+
+/** Sona uses local device pairing; hosted Synara accounts and subscriptions are not shipped. */
+export const SONA_CLOUD_ACCOUNT_ENABLED = false;
