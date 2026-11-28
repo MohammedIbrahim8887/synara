@@ -7,6 +7,7 @@ import path from "node:path";
 import { spawnProcessSync } from "@synara/shared/processRuntime";
 import { SONA_PRODUCTION_BUNDLE_ID } from "@synara/shared/desktopIdentity";
 import { stageRuntimeDependencies } from "./lib/stage-runtime-dependencies.ts";
+import { buildSonaFfmpeg } from "./lib/build-sona-ffmpeg.ts";
 
 if (process.platform !== "darwin" || process.arch !== "arm64" || process.versions.bun) {
   throw new Error(
@@ -14,7 +15,7 @@ if (process.platform !== "darwin" || process.arch !== "arm64" || process.version
   );
 }
 const root = path.resolve(import.meta.dirname, "..");
-const version = "0.1.2";
+const version = "0.1.3";
 const updateBaseUrl = "https://github.com/MohammedIbrahim8887/synara/releases/latest/download";
 const updatePrefix = "stable-macos-arm64";
 
@@ -62,6 +63,10 @@ const inventory = await stageRuntimeDependencies(
 );
 await writeFile(path.join(runtime, "dependencies.json"), JSON.stringify(inventory, null, 2));
 await cp(path.join(root, "LICENSE"), path.join(runtime, "LICENSE"));
+// LGPL ffmpeg (with its license and source pins) converts H.264/HEVC video
+// previews, which the bundled Chromium cannot decode, to VP9 WebM.
+await cp(await buildSonaFfmpeg(), path.join(runtime, "ffmpeg"), { recursive: true });
+run(path.join(runtime, "ffmpeg/ffmpeg"), ["-hide_banner", "-loglevel", "error", "-version"], stage);
 // Exercise real imports, the bundled Node runtime, native PTY and SQLite before packaging.
 run(path.join(runtime, "node"), [path.join(runtime, "backend/runtimeDependencySmoke.mjs")], stage);
 await cp(

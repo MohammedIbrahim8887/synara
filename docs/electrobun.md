@@ -1,6 +1,6 @@
 # Electrobun migration status
 
-Sona 0.1.2 ships as a standalone Electrobun 2.0.6 app on Apple Silicon Macs.
+Sona 0.1.3 ships as a standalone Electrobun 2.0.6 app on Apple Silicon Macs.
 The upstream Synara desktop uses Electron. Electrobun's isolated qualification
 target tracks native parity for the upstream launcher and publication workflow.
 
@@ -124,7 +124,8 @@ Authorization URLs are never logged.
 
 ## Standalone Sona installer (Apple Silicon Mac)
 
-With Node 24, the pinned Bun, Hutch, and `zstd` available on `PATH`, run:
+With Node 24, the pinned Bun, Hutch, `zstd`, `pkg-config`, and the Xcode command line tools
+available on `PATH`, run:
 
 ```sh
 bun run dist:desktop
@@ -132,7 +133,7 @@ bun run dist:desktop
 
 This builds the production web client and backend, stages the installed production
 dependency graph (including the repository's patches), bundles Node and CEF, and
-creates `release/sona/Sona-0.1.2-macos-arm64.dmg`, its SHA-256 checksum, and a
+creates `release/sona/Sona-0.1.3-macos-arm64.dmg`, its SHA-256 checksum, and a
 standalone `Sona.app`. Open the DMG, drag Sona to Applications, then open Sona.
 No checkout, separately installed Node,
 or development server is required. Provider CLIs, accounts, and external tools
@@ -145,13 +146,28 @@ set `SONA_BROWSER_EXECUTABLE` to the browser executable before launching Sona.
 
 The bundle uses `dev.sona.desktop` in Electrobun's stable channel and reuses
 the installed Sona preview's backend data in `~/.sona`. Quit the preview before
-opening Sona 0.1.2. macOS may prompt again for microphone access under the new
+opening Sona 0.1.3. macOS may prompt again for microphone access under the new
 bundle identity. A stored loopback port
 keeps browser preferences stable across launches; a concurrent instance is refused.
 The backend uses its existing stdin parent-lifetime lease and the renderer uses
 the existing authenticated pairing bootstrap. Set `SONA_HOME` in the app's
 environment to a short path such as one created by `mktemp -d /tmp/sona-smoke.XXXXXX`
 for local smoke tests. The browser host uses a Unix socket under that directory.
+
+### Video previews
+
+The bundled CEF has no H.264 or HEVC decoder. When the file preview player
+reports an unsupported source, it requests the same file with `playable=webm`,
+and the backend converts it to VP9/Opus WebM with the bundled ffmpeg. Converted
+copies are cached in `<state dir>/video-previews` (2 GiB limit, least recently
+served first) and keyed by real path, size, and modification time.
+
+`scripts/lib/build-sona-ffmpeg.ts` builds that ffmpeg from checksum-pinned
+FFmpeg and libvpx sources into `~/.cache/sona-ffmpeg` on first use. The build is
+LGPL (no `--enable-gpl`, no x264), links only macOS system libraries, and enables
+only the demuxers, decoders, and encoders conversion needs. The installer copies
+it with its license files and source pins to `runtime/ffmpeg`, and the backend
+receives its path as `SONA_FFMPEG_PATH`. Development servers use `ffmpeg` from `PATH`.
 
 ### Updates and release assets
 

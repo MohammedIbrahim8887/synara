@@ -24,6 +24,11 @@ import {
   VOICE_TRANSCRIPTION_UPLOAD_ROUTE_PATH,
 } from "@synara/shared/binaryTransfer";
 import { EDITOR_ICON_ROUTE_PATH } from "@synara/shared/editorIcons";
+import {
+  LOCAL_PREVIEW_PLAYABLE_PARAM,
+  LOCAL_PREVIEW_PLAYABLE_WEBM,
+  isSupportedLocalVideoPath,
+} from "@synara/shared/localPreviewFiles";
 import { threadExportBlockedReason } from "@synara/shared/threadExport";
 import {
   providerStartOptionsFromInstance,
@@ -70,6 +75,7 @@ import {
 import { ProjectAgentRepository } from "./persistence/Services/ProjectAgentRepository";
 import { resolveCachedEditorIcon } from "./editorAppIcons";
 import { LOCAL_IMAGE_ROUTE_PATH, resolveAllowedLocalPreviewFile } from "./localImageFiles.ts";
+import { convertVideoForPreview } from "./videoPreviewConversion.ts";
 import type { ProjectFaviconResolverShape } from "./project/Services/ProjectFaviconResolver";
 import { resolveScratchWorkspacesRoot } from "./scratchWorkspaces.ts";
 import { ProjectFaviconResolver } from "./project/Services/ProjectFaviconResolver";
@@ -135,6 +141,10 @@ const decodeRevokeClientSessionInput = Schema.decodeUnknownEffect(AuthRevokeClie
 
 function resolveEditorIconCacheDir(config: ServerConfigShape): string {
   return nodePath.join(config.stateDir, "app-icons");
+}
+
+function resolveVideoPreviewCacheDir(config: ServerConfigShape): string {
+  return nodePath.join(config.stateDir, "video-previews");
 }
 
 function resolveEditorIconEnv(config: ServerConfigShape): NodeJS.ProcessEnv {
@@ -1027,6 +1037,31 @@ export const localImageEffectRouteLayer = HttpRouter.add(
       });
     }
 
+    // Sona's Chromium cannot decode H.264/HEVC. The player asks for a cached
+    // WebM conversion only after native playback rejects the original.
+    const wantsPlayableWebm =
+      url.searchParams.get(LOCAL_PREVIEW_PLAYABLE_PARAM) === LOCAL_PREVIEW_PLAYABLE_WEBM &&
+      isSupportedLocalVideoPath(previewFile.path);
+    const servedFile = wantsPlayableWebm
+      ? yield* Effect.tryPromise(() =>
+          convertVideoForPreview({
+            sourcePath: previewFile.path,
+            cacheDir: resolveVideoPreviewCacheDir(config),
+          }),
+        ).pipe(
+          Effect.tapError((error) =>
+            Effect.logWarning("video preview conversion failed", String(error.cause)),
+          ),
+          Effect.orElseSucceed(() => null),
+        )
+      : previewFile;
+    if (!servedFile) {
+      return HttpServerResponse.text("Video conversion unavailable", {
+        status: 415,
+        headers: localPreviewCorsHeaders({ config, request, url }),
+      });
+    }
+
     // Stream (don't use HttpServerResponse.file, which depends on
     // Etag.Generator/Path services and was failing with a 500 here).
     const fileSystem = yield* FileSystem.FileSystem;
@@ -1034,8 +1069,8 @@ export const localImageEffectRouteLayer = HttpRouter.add(
     const isSvg = nodePath.extname(previewFile.path).toLowerCase() === ".svg";
     return streamedFileResponse({
       fileSystem,
-      path: previewFile.path,
-      sizeBytes: previewFile.sizeBytes,
+      path: servedFile.path,
+      sizeBytes: servedFile.sizeBytes,
       range: request.headers.range,
       headers: {
         "Cache-Control": "private, max-age=60",

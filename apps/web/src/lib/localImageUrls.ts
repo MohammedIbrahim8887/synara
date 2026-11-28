@@ -61,6 +61,8 @@ export function buildLocalImageUrl(input: {
   readonly grant?: string | null | undefined;
   /** Changes the preview URL so an explicit reload bypasses browser caching. */
   readonly cacheKey?: string | number | undefined;
+  /** Request the server's WebM conversion of a video the client cannot decode. */
+  readonly playable?: "webm" | undefined;
 }): string {
   return resolveExecutionResource({
     kind: "workspace-preview",
@@ -69,6 +71,7 @@ export function buildLocalImageUrl(input: {
     ...(input.grant ? { grant: input.grant } : {}),
     ...(input.cacheKey !== undefined ? { revision: String(input.cacheKey) } : {}),
     ...(input.download ? { download: true } : {}),
+    ...(input.playable ? { playable: input.playable } : {}),
   });
 }
 

@@ -57,6 +57,8 @@ export async function startElectrobunBackend(
     SYNARA_NO_BROWSER: "true",
     SYNARA_DESKTOP_PARENT_STDIN: "1",
     SYNARA_STATIC_DIR: path.join(resources, "backend", "client"),
+    // Converts H.264/HEVC previews that the bundled Chromium cannot decode.
+    SONA_FFMPEG_PATH: path.join(resources, "ffmpeg", "ffmpeg"),
     ...(browserHost
       ? {
           SYNARA_BROWSER_HOST_PIPE_PATH: browserHost.pipePath,

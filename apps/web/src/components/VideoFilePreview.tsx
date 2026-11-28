@@ -5,6 +5,8 @@ import { PanelStateMessage } from "./chat/PanelStateMessage";
 
 export function VideoFilePreview(props: {
   url: string;
+  /** Same file as `url`, served as the server's cached WebM conversion. */
+  playableUrl: string;
   fileName: string;
   isVisible: boolean;
   onReady: () => void;
@@ -14,7 +16,11 @@ export function VideoFilePreview(props: {
   const { onError } = props;
   // File/reload changes remount this component. A background grant renewal
   // should only replace the source if a subsequent range request fails.
-  const [url, setUrl] = useState(props.url);
+  const [urls, setUrls] = useState({ original: props.url, playable: props.playableUrl });
+  // Sona's Chromium has no H.264/HEVC decoder. When the original is rejected
+  // as unsupported, retry once with the WebM conversion of the same file.
+  const [converted, setConverted] = useState(false);
+  const url = converted ? urls.playable : urls.original;
   const resume = useRef<{ time: number; playing: boolean } | null>(null);
   const player = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -78,10 +84,14 @@ export function VideoFilePreview(props: {
         props.onReady();
       }}
       onError={(event) => {
-        if (!proxied && url !== props.url) {
-          const video = event.currentTarget;
+        const video = event.currentTarget;
+        if (!proxied && urls.original !== props.url) {
           resume.current = { time: video.currentTime, playing: !video.paused };
-          setUrl(props.url);
+          setUrls({ original: props.url, playable: props.playableUrl });
+          return;
+        }
+        if (!converted && video.error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+          setConverted(true);
           return;
         }
         setFailed(true);

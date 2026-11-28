@@ -62,6 +62,14 @@ export function isSupportedLocalVideoPath(filePath: string): boolean {
   return extension !== null && localVideoExtensions.has(extension);
 }
 
+/**
+ * Query parameter asking the route for a browser-playable WebM copy of a video.
+ * Sona's bundled Chromium has no H.264/HEVC decoder, so the player requests the
+ * converted copy only after native playback reports an unsupported source.
+ */
+export const LOCAL_PREVIEW_PLAYABLE_PARAM = "playable" as const;
+export const LOCAL_PREVIEW_PLAYABLE_WEBM = "webm" as const;
+
 // Full allowlist for the /api/local-image serving route. Markdown image source
 // detection (below) intentionally stays image-only: a `.pdf` link in chat
 // markdown must never be inlined as an <img>.

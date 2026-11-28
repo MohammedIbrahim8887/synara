@@ -3,7 +3,15 @@
 // into `effectServer.ts` and exercises it through a real HTTP listener.
 import http from "node:http";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -28,6 +36,7 @@ import {
 } from "./config";
 import { attachmentsEffectRouteLayer, localImageEffectRouteLayer } from "./http";
 import { createLocalPreviewGrant } from "./localImageFiles";
+import { resolveVideoPreviewFfmpeg } from "./videoPreviewConversion.ts";
 import type { CodexGeneratedImageHomeCandidate } from "./codexGeneratedImages.ts";
 import { ManagedAttachmentRepositoryLive } from "./persistence/Layers/ManagedAttachments";
 import {
@@ -305,6 +314,38 @@ describe("localImageEffectRouteLayer", () => {
       },
     );
   });
+
+  it.skipIf(resolveVideoPreviewFfmpeg() === null)(
+    "serves a cached WebM conversion when the player asks for a playable copy",
+    async () => {
+      const workspace = makeTempDir("synara-video-convert-");
+      writeFileSync(path.join(workspace, ".git"), "gitdir: .git");
+      copyFileSync(
+        path.join(import.meta.dirname, "__fixtures__", "h264-preview.mp4"),
+        path.join(workspace, "walkthrough.mp4"),
+      );
+      await withEffectServer(
+        makeServerConfig({ cwd: workspace, stateDir: makeTempDir("synara-video-state-") }),
+        localImageEffectRouteLayer,
+        async (origin) => {
+          const params = new URLSearchParams({
+            path: "walkthrough.mp4",
+            cwd: workspace,
+            playable: "webm",
+          });
+          const response = await fetch(`${origin}/api/local-image?${params}`, {
+            headers: { Range: "bytes=0-3" },
+          });
+          expect(response.status).toBe(206);
+          expect(response.headers.get("content-type")).toContain("video/webm");
+          expect(Buffer.from(await response.arrayBuffer())).toEqual(
+            Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
+          );
+        },
+      );
+    },
+    60_000,
+  );
 
   it("serves an allowlisted workspace image and signals downloads via Content-Disposition", async () => {
     const workspace = makeTempDir("synara-effect-image-workspace-");

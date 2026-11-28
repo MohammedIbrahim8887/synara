@@ -1071,6 +1071,14 @@ export function WorkspaceFilePreview(props: WorkspaceFilePreviewProps) {
             grant: localPreviewGrant,
             cacheKey: binaryPreviewRevision,
           })}
+          playableUrl={buildLocalImageUrl({
+            src: filePath,
+            canonicalPath: filePath,
+            cwd: workspaceRoot ?? undefined,
+            grant: localPreviewGrant,
+            cacheKey: binaryPreviewRevision,
+            playable: "webm",
+          })}
           fileName={basenameOfPath(filePath)}
           isVisible={isVisible}
           onReady={handleBinaryPreviewReady}
